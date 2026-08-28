@@ -20,7 +20,8 @@ fi
 # Xiph libtheora
 if [[ ! -d "libtheora" ]]; then
   echo "Downloading libtheora..."
-  wget -q https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.gz
+  curl --fail --location --retry 5 --retry-all-errors --output libtheora-1.1.1.tar.gz \
+    https://ftp.osuosl.org/pub/xiph/releases/theora/libtheora-1.1.1.tar.gz
   tar -xzf libtheora-1.1.1.tar.gz
   mv libtheora-1.1.1 libtheora
   rm -f libtheora-1.1.1.tar.gz
@@ -29,7 +30,8 @@ fi
 # GNU libiconv
 if [[ ! -d "libiconv" ]]; then
   echo "Downloading libiconv..."
-  wget -q https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz
+  curl --fail --location --retry 5 --retry-all-errors --output libiconv-1.17.tar.gz \
+    https://ftpmirror.gnu.org/libiconv/libiconv-1.17.tar.gz
   tar -xzf libiconv-1.17.tar.gz
   mv libiconv-1.17 libiconv
   rm -f libiconv-1.17.tar.gz
@@ -38,13 +40,13 @@ fi
 # Freedesktop uchardet
 if [[ ! -d "uchardet" ]]; then
   echo "Downloading uchardet..."
-  git clone $GIT_ARGS -b v0.0.8 https://github.com/freedesktop/uchardet uchardet
+  git clone $GIT_ARGS -b v0.0.8 https://gitlab.freedesktop.org/uchardet/uchardet.git uchardet
 fi
 
 # Freedesktop Pixman
 if [[ ! -d "pixman" ]]; then
   echo "Downloading Pixman..."
-  git clone $GIT_ARGS -b pixman-0.42.2 https://github.com/freedesktop/pixman pixman
+  git clone $GIT_ARGS -b pixman-0.42.2 https://gitlab.freedesktop.org/pixman/pixman.git pixman
 fi
 
 # PhysicsFS
