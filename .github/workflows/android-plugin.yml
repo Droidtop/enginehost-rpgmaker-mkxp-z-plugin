@@ -20,10 +20,7 @@ jobs:
           java-version: 17
       - name: Fetch Android dependencies selected by the port
         working-directory: android/app/jni
-        run: |
-          sed -i 's#https://github.com/freedesktop/uchardet#https://gitlab.freedesktop.org/uchardet/uchardet.git#' get_deps.sh
-          sed -i 's#https://github.com/freedesktop/pixman#https://gitlab.freedesktop.org/pixman/pixman.git#' get_deps.sh
-          bash -e ./get_deps.sh
+        run: bash -e ./get_deps.sh
       - name: Cross-compile native support libraries
         working-directory: android/app/jni
         run: |
