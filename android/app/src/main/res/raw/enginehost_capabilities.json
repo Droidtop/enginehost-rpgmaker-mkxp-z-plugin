@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "capabilities": [
+    { "id": "rpgmaker-xp-rgss1", "engineContext": "xp", "runtimeVersion": "1.0" },
+    { "id": "rpgmaker-vx-rgss2-ruby31", "engineContext": "vx", "runtimeVersion": "2.0" },
+    { "id": "rpgmaker-vxace-rgss301-ruby31", "engineContext": "vxace", "runtimeVersion": "3.01", "supportedVersions": ["3.0"] },
+    { "id": "rpgmaker-mv-1.6.2", "engineContext": "mv", "runtimeVersion": "1.6.2" },
+    { "id": "rpgmaker-mz-1.9.0", "engineContext": "mz", "runtimeVersion": "1.9.0" }
+  ]
+}
