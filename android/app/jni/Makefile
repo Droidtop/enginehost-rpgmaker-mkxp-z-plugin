@@ -125,7 +125,6 @@ RUBY_CONFIGURE_ARGS := \
 	--enable-install-static-library \
 	--disable-install-doc \
 	--disable-rubygems \
-	--with-static-linked-ext \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle \
 	--without-gmp
 
