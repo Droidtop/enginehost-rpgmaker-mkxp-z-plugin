@@ -125,6 +125,7 @@ RUBY_CONFIGURE_ARGS := \
 	--enable-install-static-library \
 	--disable-install-doc \
 	--disable-rubygems \
+	--with-rubygemsdir="$(RUBY_PREFIX)/lib/ruby/gems/3.1.0" \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle \
 	--without-gmp
 
