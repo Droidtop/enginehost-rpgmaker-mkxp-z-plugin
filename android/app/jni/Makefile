@@ -172,7 +172,11 @@ openssl/Makefile: openssl/Configure
 ruby: init openssl $(LIBDIR)/libruby.so.3.1.0
 
 $(LIBDIR)/libruby.so.3.1.0: ruby/Makefile
-	cd ruby; make -j$(NPROC); make install
+	# Ruby's cross-build extension graph is not parallel-safe: libruby can be
+	# linked before a static extension archive (for example bigdecimal.a)
+	# exists. Keep this one dependency serialized and preserve parallelism for
+	# the other native libraries.
+	cd ruby; make -j1; make install
 
 ruby/Makefile: ruby/configure
 	cd ruby; DLDFLAGS="-Wl,-soname,libruby.so" \
