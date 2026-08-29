@@ -177,7 +177,7 @@ $(LIBDIR)/libruby.so.3.1.0: ruby/Makefile
 	# exists. Keep this one dependency serialized and preserve parallelism for
 	# the other native libraries.
 	cd ruby; make -j1; make install-all \
-		'INSTALL_DOC_OPTS=--exclude=doc --exclude=default-gems --exclude=default-gems-comm --exclude=default-gems-arch'
+		'INSTALL_DOC_OPTS=--exclude=doc --exclude=default-gems --exclude=default-gems-comm --exclude=default-gems-arch --exclude=bundled-gems'
 
 ruby/Makefile: ruby/configure
 	cd ruby; DLDFLAGS="-Wl,-soname,libruby.so" \
