@@ -150,11 +150,11 @@ libiconv/Makefile: libiconv/configure
 # -------------------- OpenAL --------------------
 openal: init $(LIBDIR)/libopenal.so
 
-$(LIBDIR)/libopenal.so: openal/cmakebuild/Makefile
-	cd openal/cmakebuild; make -j$(NPROC); make install
+$(LIBDIR)/libopenal.so: openal/cmakebuild-$(ABI)/Makefile
+	cd openal/cmakebuild-$(ABI); make -j$(NPROC); make install
 
-openal/cmakebuild/Makefile: openal/CMakeLists.txt
-	cd openal; mkdir cmakebuild; cd cmakebuild; \
+openal/cmakebuild-$(ABI)/Makefile: openal/CMakeLists.txt
+	cd openal; mkdir -p cmakebuild-$(ABI); cd cmakebuild-$(ABI); \
 	$(CMAKE) -DLIBTYPE=SHARED $(OPENAL_CONFIGURE_ARGS)
 
 # -------------------- OpenSSL --------------------
@@ -194,7 +194,7 @@ clean-iconv:
 	-cd libiconv; make clean; rm Makefile
 
 clean-openal:
-	-cd openal; rm -rf cmakebuild
+	-cd openal; rm -rf cmakebuild-$(ABI)
 
 clean-openssl:
 	-cd openssl; make clean; rm Makefile
