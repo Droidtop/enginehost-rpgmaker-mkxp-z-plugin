@@ -152,7 +152,7 @@ module Scancodes
 		:LMENU => :LALT, :RMENU => :RALT,
 		
 		# These are OEM and can vary by country
-		# Values taken from Joiplay's src/input.cpp
+		# SDL names for the corresponding Win32 OEM virtual keys.
 		:OEM_1 => :SEMICOLON,
 		:OEM_PLUS => :EQUALS, :OEM_COMMA => :COMMA, :OEM_MINUS => :MINUS, :OEM_PERIOD => :PERIOD,
 		:OEM_2 => :SLASH, :OEM_3 => :GRAVE, :OEM_4 => :LEFTBRACKET, :OEM_5 => :BACKSLASH,
