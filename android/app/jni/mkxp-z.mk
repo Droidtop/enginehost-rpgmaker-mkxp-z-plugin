@@ -9,6 +9,7 @@ LOCAL_CPPFLAGS := \
 	-DGLES2_HEADER \
 	-DMKXPZ_BUILD_ANDROID \
 	-DMKXPZ_VERSION="\"2.4\"" \
+	-DMKXPZ_GIT_HASH="\"$(shell git -C $(LOCAL_PATH) rev-parse --short HEAD)\"" \
 	-DMKXPZ_INIT_GL_LATER \
 	-DMKXPZ_ALCDEVICE="ALCdevice" \
 	-DMKXPZ_SSL \
