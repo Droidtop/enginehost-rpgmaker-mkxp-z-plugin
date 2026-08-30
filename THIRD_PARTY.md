@@ -22,3 +22,6 @@ Ruby 1.9.2's build scripts predate current host Ruby releases. The explicit
 `android/app/jni/patches/ruby19-modern-baseruby.patch` replaces only the removed
 `TRUE` constant in `tool/mkconfig.rb` with the equivalent `true` literal so the
 pinned source can generate target configuration under the CI host's Ruby 3.2.
+It also makes that generated configuration's Ruby-version equality guard honor
+the build system's existing `CROSS_COMPILING` marker; native builds retain the
+original guard.
