@@ -54,22 +54,12 @@ LOCAL_SRC_FILES := \
 	$(LOCAL_PATH)/pixman/pixman-trap.c \
 	$(LOCAL_PATH)/pixman/pixman-utils.c
 
-ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
-	LOCAL_CFLAGS += -DUSE_ARM_NEON -DUSE_ARM_SIMD
-	LOCAL_SRC_FILES += \
-		$(LOCAL_PATH)/pixman/pixman-arm-simd.c \
-		$(LOCAL_PATH)/pixman/pixman-arm-simd-asm.S \
-		$(LOCAL_PATH)/pixman/pixman-arm-simd-asm-scaled.S \
-		$(LOCAL_PATH)/pixman/pixman-arm-neon.c \
-		$(LOCAL_PATH)/pixman/pixman-arm-neon-asm.S \
-		$(LOCAL_PATH)/pixman/pixman-arm-neon-asm-bilinear.S
-else ifeq ($(TARGET_ARCH_ABI), arm64-v8a)
-	LOCAL_CFLAGS += -DUSE_ARM_NEON -DUSE_ARM_A64_NEON
-	LOCAL_SRC_FILES += \
-		$(LOCAL_PATH)/pixman/pixman-arm-neon.c \
-		$(LOCAL_PATH)/pixman/pixman-arma64-neon-asm.S \
-		$(LOCAL_PATH)/pixman/pixman-arma64-neon-asm-bilinear.S
-else ifeq ($(TARGET_ARCH_ABI), x86)
+# Pixman 0.42's handwritten ARM sources use GNU-as macro syntax no longer
+# accepted by the NDK 27 integrated assembler, while modern NDKs no longer
+# ship the old GNU cross-assembler. The generic C implementation is complete
+# and correct on both ARM ABIs; keep it until the optimization sources are
+# updated upstream rather than making the APK depend on a host assembler.
+ifeq ($(TARGET_ARCH_ABI), x86)
 	LOCAL_CFLAGS += -DUSE_X86_MMX -DUSE_SSE2 -DUSE_SSSE3
 	LOCAL_SRC_FILES += \
 		$(LOCAL_PATH)/pixman/pixman-sse2.c \
