@@ -131,11 +131,12 @@ RUBY31_CONFIGURE_ARGS := \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle \
 	--without-gmp
 
-# Ruby 1.9 embeds this host command in its cross-compile preload. Modern
-# RubyGems would otherwise load the target rbconfig before that preload runs.
+# Ruby 1.9 embeds this host command in its cross-compile preload. Load the host
+# file utilities/config first, then disable RubyGems before the preload changes
+# RUBY_VERSION to the target value.
 RUBY19_CONFIGURE_ARGS := \
 	--prefix="$(RUBY19_PREFIX)" \
-	--with-baseruby="$$(command -v ruby) --disable-gems" \
+	--with-baseruby="$$(command -v ruby) --disable-gems -rfileutils" \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
