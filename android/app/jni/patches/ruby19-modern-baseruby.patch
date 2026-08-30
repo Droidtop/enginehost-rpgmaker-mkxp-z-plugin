@@ -1,0 +1,13 @@
+diff --git a/tool/mkconfig.rb b/tool/mkconfig.rb
+index 5c4c80c..962de21 100755
+--- a/tool/mkconfig.rb
++++ b/tool/mkconfig.rb
+@@ -23,7 +23,7 @@ def config.write(arg)
+ end
+ $stdout = config
+ 
+-fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
++fast = {'prefix'=>true, 'ruby_install_name'=>true, 'INSTALL'=>true, 'EXEEXT'=>true}
+ print %[
+ # This file was created by #{mkconfig} when ruby was built.  Any
+ # changes made to this file will be lost the next time ruby is built.

@@ -200,7 +200,7 @@ ruby31/configure: ruby31/configure.ac
 ruby19: init $(RUBY19_LIBDIR)/libruby19.so
 
 $(RUBY19_LIBDIR)/libruby19.so: ruby19/Makefile
-	cd ruby19; make -j1; make install-nodoc
+	cd ruby19; make -j1 && make install-nodoc
 
 ruby19/Makefile: ruby19/configure
 	cd ruby19; ac_cv_func_setpgrp_void=yes \
