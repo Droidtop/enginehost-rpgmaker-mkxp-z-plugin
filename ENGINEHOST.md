@@ -21,16 +21,17 @@ it on mkxp-z configuration in memory after the host has applied the
 authoritative game-folder configuration. A version branch may further restrict
 or translate settings for its Ruby ABI and compatibility profiles.
 
-Ruby is selection-critical rather than an ordinary option. This build's RGSS
-capabilities advertise `runtimeComponents: { "ruby": "3.1.3" }`; a game that
-needs the original VX Ace ABI requests
+Ruby is selection-critical rather than an ordinary option. RGSS capabilities
+advertise either `runtimeComponents: { "ruby": "3.1.3" }` or
+`runtimeComponents: { "ruby": "1.9.2" }`; a game that needs the original VX
+Ace ABI requests
 `runtimeRequirements: { "ruby": "1.9.2" }` and will resolve only to the
-matching capability. The completed plugin bundles both internally namespaced
-Ruby/mkxp native builds in one APK and routes by capability ID; it does not
+matching capability. The plugin bundles both internally namespaced Ruby/mkxp
+native builds in one APK and routes by capability ID; it does not
 require a separate installed plugin for each Ruby. Signed plugin APK releases
 are the downloadable runtime bundles—native libraries are not loaded loose
 from game storage.
 
-Android APKs are produced in CI. The initial RGSS3/Ruby 3.1 line is useful for
-broad compatibility but is not yet a faithful Ruby 1.9 runtime for every VX Ace
-game; MGQ Paradox requires additional Win32API compatibility work.
+Android APKs are produced in CI. Both builds retain mkxp-z's MiniFFI-backed
+Win32API compatibility surface. This is still an incomplete implementation:
+MGQ Paradox may expose additional Windows API or RGSS compatibility gaps.

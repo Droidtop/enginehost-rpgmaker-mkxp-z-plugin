@@ -44,6 +44,8 @@ else ifneq (, $(findstring /cygdrive/,$(PATH)))
 else
 	RUBY_PREFIX := $(BUILD_PREFIX)
 endif
+RUBY19_PREFIX := $(BUILD_PREFIX)/ruby19
+RUBY19_LIBDIR := $(RUBY19_PREFIX)/lib
 
 # Toolchain tools
 CC      := $(TOOLCHAIN)/bin/$(PREFIX)-clang
@@ -118,7 +120,7 @@ OPENAL_CONFIGURE_ARGS := \
 	-DALSOFT_UTILS=OFF
 
 # Ruby configure arguments to build
-RUBY_CONFIGURE_ARGS := \
+RUBY31_CONFIGURE_ARGS := \
 	--prefix="$(RUBY_PREFIX)" \
 	--enable-shared \
 	--enable-static \
@@ -129,11 +131,19 @@ RUBY_CONFIGURE_ARGS := \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle \
 	--without-gmp
 
+RUBY19_CONFIGURE_ARGS := \
+	--prefix="$(RUBY19_PREFIX)" \
+	--with-baseruby="$$(command -v ruby)" \
+	--with-soname=ruby19 \
+	--enable-shared \
+	--disable-install-doc \
+	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle,tk,curses,openssl
+
 CONFIGURE := $(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS)
 CMAKE     := $(CONFIGURE_ENV) cmake .. $(CMAKE_ARGS)
 
 
-.PHONY: all init clean iconv openal openssl ruby clean-iconv clean-openal clean-openssl clean-ruby
+.PHONY: all init clean iconv openal openssl ruby31 ruby19 clean-iconv clean-openal clean-openssl clean-ruby
 
 default: all
 
@@ -168,23 +178,36 @@ openssl/Makefile: openssl/Configure
 	no-shared -D__ANDROID_API__=$(API) \
 	--prefix="$(BUILD_PREFIX)" --openssldir="$(BUILD_PREFIX)"
 
-# -------------------- Ruby --------------------
-ruby: init openssl $(LIBDIR)/libruby.so.3.1.0
+# -------------------- Ruby runtimes --------------------
+ruby31: init openssl $(LIBDIR)/libruby31.so
 
-$(LIBDIR)/libruby.so.3.1.0: ruby/Makefile
+$(LIBDIR)/libruby31.so: ruby31/Makefile
 	# Ruby's cross-build extension graph is not parallel-safe: libruby can be
 	# linked before a static extension archive (for example bigdecimal.a)
 	# exists. Keep this one dependency serialized and preserve parallelism for
 	# the other native libraries.
-	cd ruby; make -j1; make install-all \
+	cd ruby31; make -j1; make install-all \
 		'INSTALL_DOC_OPTS=--exclude=doc --exclude=default-gems --exclude=default-gems-comm --exclude=default-gems-arch --exclude=bundled-gems'
+	cp $(LIBDIR)/libruby.so.3.1.0 $@
 
-ruby/Makefile: ruby/configure
-	cd ruby; DLDFLAGS="-Wl,-soname,libruby.so" \
-	$(CONFIGURE) $(RUBY_CONFIGURE_ARGS)
+ruby31/Makefile: ruby31/configure
+	cd ruby31; DLDFLAGS="-Wl,-soname,libruby31.so" \
+	$(CONFIGURE) $(RUBY31_CONFIGURE_ARGS)
 
-ruby/configure: ruby/configure.ac
-	cd ruby; autoreconf -i
+ruby31/configure: ruby31/configure.ac
+	cd ruby31; autoreconf -i
+
+ruby19: init $(RUBY19_LIBDIR)/libruby19.so
+
+$(RUBY19_LIBDIR)/libruby19.so: ruby19/Makefile
+	cd ruby19; make -j1; make install-nodoc
+
+ruby19/Makefile: ruby19/configure
+	cd ruby19; ac_cv_func_setpgrp_void=yes \
+		$(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS) $(RUBY19_CONFIGURE_ARGS)
+
+ruby19/configure: ruby19/configure.in
+	cd ruby19; autoreconf -i
 
 
 init:
@@ -200,8 +223,9 @@ clean-openssl:
 	-cd openssl; make clean; rm Makefile
 
 clean-ruby:
-	-cd ruby; make clean; rm Makefile; rm configure
+	-cd ruby31; make clean; rm Makefile; rm configure
+	-cd ruby19; make clean; rm Makefile; rm configure
 
 clean: clean-iconv clean-openal clean-openssl clean-ruby
 
-all: iconv openal openssl ruby
+all: iconv openal openssl ruby31 ruby19

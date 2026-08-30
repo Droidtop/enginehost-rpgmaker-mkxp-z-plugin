@@ -16,5 +16,12 @@ include $(L_PATH)/libiconv.mk
 include $(L_PATH)/openssl.mk
 include $(L_PATH)/ruby.mk
 
-# Include main library
+# Include one namespaced mkxp binary per bundled Ruby ABI. Only the selected
+# binary is loaded for a launch, so the two VMs never share a process.
+ENGINEHOST_MKXP_MODULE := mkxp-z-ruby31
+ENGINEHOST_RUBY_MODULE := ruby31
+include $(L_PATH)/mkxp-z.mk
+
+ENGINEHOST_MKXP_MODULE := mkxp-z-ruby19
+ENGINEHOST_RUBY_MODULE := ruby19
 include $(L_PATH)/mkxp-z.mk

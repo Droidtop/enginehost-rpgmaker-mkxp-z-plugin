@@ -91,10 +91,22 @@ if [[ ! -d "openssl" ]]; then
   git clone $GIT_ARGS -b OpenSSL_1_1_1t https://github.com/openssl/openssl openssl
 fi
 
-# Ruby 3.1.0 (patched for mkxp-z)
-if [[ ! -d "ruby" ]]; then
-  echo "Downloading Ruby..."
-  git clone $GIT_ARGS -b mkxp-z-3.1 https://github.com/mkxp-z/ruby ruby
+# Ruby 3.1.3 (patched for mkxp-z)
+if [[ ! -d "ruby31" ]]; then
+  echo "Downloading Ruby 3.1.3..."
+  git init -q ruby31
+  git -C ruby31 remote add origin https://github.com/mkxp-z/ruby
+  git -C ruby31 fetch -q --depth 1 origin a2d396ea42e1ec778bc516489afe7fde6f0cef5d
+  git -C ruby31 -c advice.detachedHead=false checkout -q FETCH_HEAD
+fi
+
+# Official Ruby 1.9.2-p320, the language runtime used by RGSS3/VX Ace.
+if [[ ! -d "ruby19" ]]; then
+  echo "Downloading Ruby 1.9.2-p320..."
+  git init -q ruby19
+  git -C ruby19 remote add origin https://github.com/ruby/ruby.git
+  git -C ruby19 fetch -q --depth 1 origin ea0b32f984ada7baaaa195a7a94803f49bd9b4a8
+  git -C ruby19 -c advice.detachedHead=false checkout -q FETCH_HEAD
 fi
 
 echo "Done!"

@@ -1,9 +1,9 @@
-LOCAL_PATH := $(call my-dir)/ruby
+LOCAL_PATH := $(call my-dir)/ruby31
 LOCAL_BUILD_PATH := $(call my-dir)/build-$(TARGET_ARCH_ABI)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := ruby
+LOCAL_MODULE := ruby31
 
 LOCAL_C_INCLUDES := $(LOCAL_BUILD_PATH)/include/ruby-3.1.0
 
@@ -23,6 +23,20 @@ else ifeq ($(TARGET_ARCH_ABI), x86_64)
 	LOCAL_EXPORT_C_INCLUDES += $(LOCAL_BUILD_PATH)/include/ruby-3.1.0/x86_64-linux-android-android
 endif
 
-LOCAL_SRC_FILES := $(LOCAL_BUILD_PATH)/lib/libruby.so
+LOCAL_SRC_FILES := $(LOCAL_BUILD_PATH)/lib/libruby31.so
+
+include $(PREBUILT_SHARED_LIBRARY)
+
+LOCAL_PATH := $(call my-dir)/ruby19
+LOCAL_BUILD_PATH := $(call my-dir)/build-$(TARGET_ARCH_ABI)/ruby19
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := ruby19
+LOCAL_C_INCLUDES := \
+	$(LOCAL_BUILD_PATH)/include/ruby-1.9.1 \
+	$(wildcard $(LOCAL_BUILD_PATH)/include/ruby-1.9.1/*)
+LOCAL_EXPORT_C_INCLUDES := $(LOCAL_C_INCLUDES)
+LOCAL_SRC_FILES := $(LOCAL_BUILD_PATH)/lib/libruby19.so
 
 include $(PREBUILT_SHARED_LIBRARY)

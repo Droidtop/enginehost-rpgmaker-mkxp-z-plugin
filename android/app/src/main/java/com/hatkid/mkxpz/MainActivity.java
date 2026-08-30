@@ -50,6 +50,23 @@ public class MainActivity extends SDLActivity
 
     protected static TextView tvFps;
 
+    /** Selects one of the two native mkxp/Ruby pairs bundled in this APK. */
+    @Override
+    protected String[] getLibraries()
+    {
+        String capability = getIntent().getStringExtra("capabilityId");
+        boolean ruby19 = capability != null && capability.endsWith("-ruby19");
+        return new String[] {
+            "SDL2",
+            "SDL2_image",
+            "SDL2_ttf",
+            "SDL2_sound",
+            "openal",
+            ruby19 ? "ruby19" : "ruby31",
+            ruby19 ? "mkxp-z-ruby19" : "mkxp-z-ruby31"
+        };
+    }
+
     // In-screen gamepad
     private final Gamepad mGamepad = new Gamepad();
     private boolean mGamepadInvisible = false;
