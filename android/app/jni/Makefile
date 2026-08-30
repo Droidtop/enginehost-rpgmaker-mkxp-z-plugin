@@ -131,9 +131,11 @@ RUBY31_CONFIGURE_ARGS := \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle \
 	--without-gmp
 
+# Ruby 1.9 embeds this host command in its cross-compile preload. Modern
+# RubyGems would otherwise load the target rbconfig before that preload runs.
 RUBY19_CONFIGURE_ARGS := \
 	--prefix="$(RUBY19_PREFIX)" \
-	--with-baseruby="$$(command -v ruby)" \
+	--with-baseruby="$$(command -v ruby) --disable-gems" \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
@@ -200,10 +202,7 @@ ruby31/configure: ruby31/configure.ac
 ruby19: init $(RUBY19_LIBDIR)/libruby19.so
 
 $(RUBY19_LIBDIR)/libruby19.so: ruby19/Makefile
-	# Host RubyGems eagerly loads the target rbconfig before Ruby can process
-	# the generated cross-compile preload. Disable gems only for build tools.
-	cd ruby19; make -j1 BASERUBY="ruby --disable-gems" && \
-		make install-nodoc BASERUBY="ruby --disable-gems"
+	cd ruby19; make -j1 && make install-nodoc
 
 ruby19/Makefile: ruby19/configure
 	cd ruby19; ac_cv_func_setpgrp_void=yes \
