@@ -11,7 +11,3 @@ index 5c4c80c..962de21 100755
  print %[
  # This file was created by #{mkconfig} when ruby was built.  Any
  # changes made to this file will be lost the next time ruby is built.
-@@ -31,2 +31,2 @@ module RbConfig
--  RUBY_VERSION == "#{version}" or
-+  defined?(::CROSS_COMPILING) || RUBY_VERSION == "#{version}" or
-     raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
