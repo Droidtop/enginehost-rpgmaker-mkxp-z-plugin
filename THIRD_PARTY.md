@@ -17,3 +17,8 @@ repository contains all enginehost build changes needed to reproduce the
 libraries. Ruby is copyright Yukihiro Matsumoto and contributors and is
 available under GPL version 2 or the Ruby license. This plugin is distributed
 under GPL-2.0-or-later; see `COPYING`.
+
+Ruby 1.9.2's build scripts predate current host Ruby releases. The explicit
+`android/app/jni/patches/ruby19-modern-baseruby.patch` replaces only the removed
+`TRUE` constant in `tool/mkconfig.rb` with the equivalent `true` literal so the
+pinned source can generate target configuration under the CI host's Ruby 3.2.

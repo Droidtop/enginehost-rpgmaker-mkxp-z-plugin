@@ -107,6 +107,7 @@ if [[ ! -d "ruby19" ]]; then
   git -C ruby19 remote add origin https://github.com/ruby/ruby.git
   git -C ruby19 fetch -q --depth 1 origin ea0b32f984ada7baaaa195a7a94803f49bd9b4a8
   git -C ruby19 -c advice.detachedHead=false checkout -q FETCH_HEAD
+  git -C ruby19 apply ../patches/ruby19-modern-baseruby.patch
 fi
 
 echo "Done!"
