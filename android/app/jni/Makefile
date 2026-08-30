@@ -208,6 +208,11 @@ ruby19/Makefile: ruby19/configure
 
 ruby19/configure: ruby19/configure.in
 	cd ruby19; autoreconf -i
+	# Ruby 1.9.2 predates both Android's androideabi OS name and AArch64.
+	# Refresh only the GNU host canonicalizers; the Ruby source itself remains
+	# the pinned official tag and modern Autoconf already ships these files.
+	cp "$$(automake --print-libdir)/config.sub" ruby19/tool/config.sub
+	cp "$$(automake --print-libdir)/config.guess" ruby19/tool/config.guess
 
 
 init:
