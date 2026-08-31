@@ -139,9 +139,10 @@ RUBY31_CONFIGURE_ARGS := \
 # be redirected to the target tree.
 RUBY19_HOST_RBCONFIG := $(shell ruby --disable-gems -rrbconfig -e 'print $$LOADED_FEATURES.grep(%r{/rbconfig[.]rb$$}).first')
 RUBY19_HOST_FILEUTILS := $(shell ruby --disable-gems -rfileutils -e 'print $$LOADED_FEATURES.grep(%r{/fileutils[.]rb$$}).first')
+RUBY19_HOST_COMPAT := $(CURDIR)/ruby19-modern-host.rb
 RUBY19_CONFIGURE_ARGS := \
 	--prefix="$(RUBY19_PREFIX)" \
-	--with-baseruby="$$(command -v ruby) --disable-gems -r$(RUBY19_HOST_RBCONFIG) -r$(RUBY19_HOST_FILEUTILS)" \
+	--with-baseruby="$$(command -v ruby) --disable-gems -r$(RUBY19_HOST_COMPAT) -r$(RUBY19_HOST_RBCONFIG) -r$(RUBY19_HOST_FILEUTILS)" \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
