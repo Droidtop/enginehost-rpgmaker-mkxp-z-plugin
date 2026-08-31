@@ -11,3 +11,20 @@ index 5c4c80c..962de21 100755
  print %[
  # This file was created by #{mkconfig} when ruby was built.  Any
  # changes made to this file will be lost the next time ruby is built.
+diff --git a/dir.c b/dir.c
+index 6479f76..9e58e08 100644
+--- a/dir.c
++++ b/dir.c
+@@ -702,5 +702,12 @@ static VALUE
+ dir_set_pos(VALUE dir, VALUE pos)
+ {
++#ifdef HAVE_SEEKDIR
+     dir_seek(dir, pos);
++#else
++    /* rb_f_notimplement has Ruby's argc/argv method signature, while the
++     * internal dir_seek helper takes two VALUEs. Do not alias one to the
++     * other at this direct C call site. */
++    rb_f_notimplement(1, &pos, dir);
++#endif
+     return pos;
+ }
