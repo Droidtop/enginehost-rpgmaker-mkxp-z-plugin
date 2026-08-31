@@ -109,7 +109,12 @@ if [[ ! -d "ruby19" ]]; then
   tar -xzf ruby-1.9.2-p320.tar.gz
   mv ruby-1.9.2-p320 ruby19
   rm -f ruby-1.9.2-p320.tar.gz
-  git -C ruby19 apply ../patches/ruby19-modern-baseruby.patch
+  # This is an official release tarball, not a standalone Git checkout. Apply
+  # paths relative to the extracted tree explicitly; otherwise Git may resolve
+  # the surrounding plugin repository and leave the tarball untouched.
+  patch --directory=ruby19 --strip=1 < patches/ruby19-modern-baseruby.patch
+  grep -Fq "'prefix'=>true" ruby19/tool/mkconfig.rb
+  grep -Fq 'rb_f_notimplement(1, &pos, dir);' ruby19/dir.c
 fi
 
 echo "Done!"
