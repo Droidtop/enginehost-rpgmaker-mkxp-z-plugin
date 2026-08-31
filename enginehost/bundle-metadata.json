@@ -1,0 +1,61 @@
+{
+  "bundleId": "dev.enginehost.rpgmaker.rgss.v1",
+  "engine": "rpgmaker",
+  "pluginVersion": "0.1.0",
+  "apiVersion": 1,
+  "entrypoint": "com.hatkid.mkxpz.MainActivity",
+  "runtimeTransport": "android-activity",
+  "origin": "https://github.com/droidtop/enginehost-rpgmaker-mkxp-z-plugin",
+  "dexFiles": ["classes.dex"],
+  "resourceApks": ["runtime.apk"],
+  "capabilities": [
+    {
+      "id": "rpgmaker-xp-rgss1-ruby31",
+      "engineContext": "xp",
+      "runtimeVersion": "1.0",
+      "supportedSeries": ["1"],
+      "runtimeComponents": {"ruby": "3.1.3"}
+    },
+    {
+      "id": "rpgmaker-xp-rgss1-ruby19",
+      "engineContext": "xp",
+      "runtimeVersion": "1.0",
+      "supportedSeries": ["1"],
+      "runtimeComponents": {"ruby": "1.9.2"}
+    },
+    {
+      "id": "rpgmaker-vx-rgss2-ruby31",
+      "engineContext": "vx",
+      "runtimeVersion": "2.0",
+      "supportedSeries": ["2"],
+      "runtimeComponents": {"ruby": "3.1.3"}
+    },
+    {
+      "id": "rpgmaker-vx-rgss2-ruby19",
+      "engineContext": "vx",
+      "runtimeVersion": "2.0",
+      "supportedSeries": ["2"],
+      "runtimeComponents": {"ruby": "1.9.2"}
+    },
+    {
+      "id": "rpgmaker-vxace-rgss3-ruby31",
+      "engineContext": "vxace",
+      "runtimeVersion": "3.01",
+      "supportedSeries": ["3"],
+      "runtimeComponents": {"ruby": "3.1.3"}
+    },
+    {
+      "id": "rpgmaker-vxace-rgss3-ruby19",
+      "engineContext": "vxace",
+      "runtimeVersion": "3.01",
+      "supportedSeries": ["3"],
+      "runtimeComponents": {"ruby": "1.9.2"}
+    }
+  ],
+  "source": {
+    "upstream": "https://github.com/mkxp-z/mkxp-z",
+    "androidPort": "https://github.com/thehatkid/mkxp-z-android",
+    "revision": "continuous"
+  },
+  "licenses": ["GPL-2.0-or-later and bundled upstream notices"]
+}

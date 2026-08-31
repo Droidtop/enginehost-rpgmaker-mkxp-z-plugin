@@ -2,6 +2,6 @@
   "schemaVersion": 1,
   "engine": "rpgmaker",
   "pluginVersion": "0.1.0",
-  "packageName": "dev.enginehost.plugin.rpgmaker.rgss3.ruby31.slot1",
-  "line": "vxace-rgss3-ruby31"
+  "packageName": "dev.enginehost.rpgmaker.rgss.v1",
+  "line": "rgss-v1"
 }
