@@ -103,10 +103,12 @@ fi
 # Official Ruby 1.9.2-p320, the language runtime used by RGSS3/VX Ace.
 if [[ ! -d "ruby19" ]]; then
   echo "Downloading Ruby 1.9.2-p320..."
-  git init -q ruby19
-  git -C ruby19 remote add origin https://github.com/ruby/ruby.git
-  git -C ruby19 fetch -q --depth 1 origin ea0b32f984ada7baaaa195a7a94803f49bd9b4a8
-  git -C ruby19 -c advice.detachedHead=false checkout -q FETCH_HEAD
+  curl --fail --location --retry 5 --retry-all-errors --output ruby-1.9.2-p320.tar.gz \
+    https://cache.ruby-lang.org/pub/ruby/1.9/ruby-1.9.2-p320.tar.gz
+  echo "39a1f046e8756c1885cde42b234bc608196e50feadf1d0f202f7634f4a4b1245  ruby-1.9.2-p320.tar.gz" | sha256sum --check --strict
+  tar -xzf ruby-1.9.2-p320.tar.gz
+  mv ruby-1.9.2-p320 ruby19
+  rm -f ruby-1.9.2-p320.tar.gz
   git -C ruby19 apply ../patches/ruby19-modern-baseruby.patch
 fi
 
