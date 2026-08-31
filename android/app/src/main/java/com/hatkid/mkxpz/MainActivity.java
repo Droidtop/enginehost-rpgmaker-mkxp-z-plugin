@@ -54,7 +54,7 @@ public class MainActivity extends SDLActivity
     @Override
     protected String[] getLibraries()
     {
-        String capability = getIntent().getStringExtra("capabilityId");
+        String capability = getIntent().getStringExtra("dev.enginehost.runtime.CAPABILITY_ID");
         boolean ruby19 = capability != null && capability.endsWith("-ruby19");
         return new String[] {
             "SDL2",
@@ -123,7 +123,7 @@ public class MainActivity extends SDLActivity
         if (engineHostPath != null && new File(engineHostPath).isDirectory()) {
             GAME_PATH = new File(engineHostPath).getAbsolutePath();
         }
-        String engineHostOptions = getIntent().getStringExtra("options");
+        String engineHostOptions = getIntent().getStringExtra("dev.enginehost.runtime.OPTIONS");
         if (engineHostOptions != null) {
             try {
                 Os.setenv("ENGINEHOST_OPTIONS", engineHostOptions, true);
