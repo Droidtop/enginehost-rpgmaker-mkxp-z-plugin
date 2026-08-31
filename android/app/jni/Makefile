@@ -211,11 +211,7 @@ $(RUBY19_LIBDIR)/libruby19.so: ruby19/Makefile
 	cd ruby19; make -j1 && make install-nodoc
 
 ruby19/Makefile: ruby19/configure
-	# Bionic declares both directory-position APIs. Ruby 1.9's old cross-compile
-	# probes report them unavailable, which aliases a two-argument helper to the
-	# three-argument rb_f_notimplement and no longer compiles with modern Clang.
 	cd ruby19; ac_cv_func_setpgrp_void=yes \
-		ac_cv_func_seekdir=yes ac_cv_func_telldir=yes \
 		$(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS) $(RUBY19_CONFIGURE_ARGS)
 
 ruby19/configure: ruby19/configure.in
