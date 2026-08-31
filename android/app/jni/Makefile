@@ -211,6 +211,12 @@ $(RUBY19_LIBDIR)/libruby19.so: ruby19/Makefile
 	cd ruby19; make -j1 && make install-nodoc
 
 ruby19/Makefile: ruby19/configure
+	# Release tarballs already contain configure, so the configure-generation
+	# target may not run. Refresh the host canonicalizers immediately before
+	# configuration as well; otherwise the bundled 2010 config.sub rejects
+	# Android and AArch64 host triplets.
+	cp "$$(automake --print-libdir)/config.sub" ruby19/tool/config.sub
+	cp "$$(automake --print-libdir)/config.guess" ruby19/tool/config.guess
 	cd ruby19; ac_cv_func_setpgrp_void=yes \
 		$(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS) $(RUBY19_CONFIGURE_ARGS)
 
