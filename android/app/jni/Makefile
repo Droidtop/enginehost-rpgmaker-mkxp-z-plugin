@@ -131,12 +131,17 @@ RUBY31_CONFIGURE_ARGS := \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle \
 	--without-gmp
 
-# Ruby 1.9 embeds this host command in its cross-compile preload. Load the host
-# file utilities/config first, then disable RubyGems before the preload changes
-# RUBY_VERSION to the target value.
+# Ruby 1.9 appends its target build directory with -I when it invokes BASERUBY.
+# A modern Ruby processes -I before -r, so a plain `-rfileutils` finds the
+# target Ruby 1.9 rbconfig and aborts because it does not match the host
+# executable. Resolve and require the host copies by absolute path first. Once
+# they are in $LOADED_FEATURES, fileutils' internal `require "rbconfig"` cannot
+# be redirected to the target tree.
+RUBY19_HOST_RBCONFIG := $(shell ruby --disable-gems -rrbconfig -e 'print $$LOADED_FEATURES.grep(%r{/rbconfig[.]rb$$}).first')
+RUBY19_HOST_FILEUTILS := $(shell ruby --disable-gems -rfileutils -e 'print $$LOADED_FEATURES.grep(%r{/fileutils[.]rb$$}).first')
 RUBY19_CONFIGURE_ARGS := \
 	--prefix="$(RUBY19_PREFIX)" \
-	--with-baseruby="$$(command -v ruby) --disable-gems -rfileutils" \
+	--with-baseruby="$$(command -v ruby) --disable-gems -r$(RUBY19_HOST_RBCONFIG) -r$(RUBY19_HOST_FILEUTILS)" \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
