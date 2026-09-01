@@ -123,6 +123,7 @@ if [[ ! -d "ruby19" ]]; then
   grep -Fq 'host_rbconfig = Object.const_get(:RbConfig)' ruby19/template/fake.rb.in
   grep -Fq "LIBRUBY_SO='lib\$(RUBY_SO_NAME).so'" ruby19/configure.in
   grep -Fq 'refusing to generate Android encodings with non-target compiler' ruby19/enc/make_encmake.rb
+  grep -Fq '__ANDROID_API__ >= 26' ruby19/ext/nkf/nkf-utf8/nkf.c
 fi
 
 echo "Done!"

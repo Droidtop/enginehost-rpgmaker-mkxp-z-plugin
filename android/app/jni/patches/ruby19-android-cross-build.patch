@@ -39,3 +39,13 @@ index 75af2ec..8553b09 100755
 +        target_cc
 +end
 +
+diff --git a/ext/nkf/nkf-utf8/nkf.c b/ext/nkf/nkf-utf8/nkf.c
+index 48f133d..28be024 100644
+--- a/ext/nkf/nkf-utf8/nkf.c
++++ b/ext/nkf/nkf-utf8/nkf.c
+@@ -753,1 +753,4 @@
+-#ifdef HAVE_LANGINFO_H
++/* Android exposes <langinfo.h> before nl_langinfo() is available. */
++#if defined(HAVE_LANGINFO_H) && \
++    (!defined(__ANDROID__) || !defined(__ANDROID_API__) || \
++     __ANDROID_API__ >= 26)
