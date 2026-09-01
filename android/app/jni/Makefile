@@ -142,7 +142,7 @@ RUBY19_HOST_FILEUTILS := $(shell ruby --disable-gems -rfileutils -e 'print $$LOA
 RUBY19_HOST_COMPAT := $(CURDIR)/ruby19-modern-host.rb
 RUBY19_CONFIGURE_ARGS := \
 	--prefix="$(RUBY19_PREFIX)" \
-	--with-baseruby="$$(command -v ruby) --disable-gems -r$(RUBY19_HOST_COMPAT) -r$(RUBY19_HOST_RBCONFIG) -r$(RUBY19_HOST_FILEUTILS)" \
+	--with-baseruby="$$(command -v ruby) --disable-gems -r$(RUBY19_HOST_RBCONFIG) -r$(RUBY19_HOST_FILEUTILS) -r$(RUBY19_HOST_COMPAT)" \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
