@@ -28,3 +28,15 @@ index 6479f76..9e58e08 100644
 +#endif
      return pos;
  }
+diff --git a/vm_exec.h b/vm_exec.h
+index 9ed457e..19b20cb 100644
+--- a/vm_exec.h
++++ b/vm_exec.h
+@@ -112,7 +112,7 @@
+ #define TC_DISPATCH(insn) \
+   INSN_DISPATCH_SIG(insn); \
+-  goto *GET_CURRENT_INSN(); \
++  goto *(void *)GET_CURRENT_INSN(); \
+   ;
+ 
+ #else
