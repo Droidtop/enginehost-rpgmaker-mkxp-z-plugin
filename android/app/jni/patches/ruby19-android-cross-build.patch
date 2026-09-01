@@ -49,3 +49,15 @@ index 48f133d..28be024 100644
 +#if defined(HAVE_LANGINFO_H) && \
 +    (!defined(__ANDROID__) || !defined(__ANDROID_API__) || \
 +     __ANDROID_API__ >= 26)
+diff --git a/eval_intern.h b/eval_intern.h
+index da441ef..be144dd 100644
+--- a/eval_intern.h
++++ b/eval_intern.h
+@@ -216,3 +216,7 @@ void rb_trap_restore_mask(void);
+ #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
++# ifdef __ANDROID__
++#  define CharNext(p) ((p) + 1)
++# else
+ #define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
++# endif
+ #endif
