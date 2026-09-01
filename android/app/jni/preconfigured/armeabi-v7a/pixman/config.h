@@ -139,10 +139,20 @@
 /* #undef USE_ARM_IWMMXT */
 
 /* use ARM NEON assembly optimizations */
-#define USE_ARM_NEON 1
+/* Disabled to match pixman.mk, which does not compile the handwritten
+   ARM optimization sources (their GNU-as macro syntax is rejected by the
+   NDK integrated assembler). Leaving this defined makes pixman-arm.c call
+   _pixman_implementation_create_arm_simd/_arm_neon, which are then never
+   linked in. */
+/* #undef USE_ARM_NEON */
 
 /* use ARM SIMD assembly optimizations */
-#define USE_ARM_SIMD 1
+/* Disabled to match pixman.mk, which does not compile the handwritten
+   ARM optimization sources (their GNU-as macro syntax is rejected by the
+   NDK integrated assembler). Leaving this defined makes pixman-arm.c call
+   _pixman_implementation_create_arm_simd/_arm_neon, which are then never
+   linked in. */
+/* #undef USE_ARM_SIMD */
 
 /* use GNU-style inline assembler */
 #define USE_GCC_INLINE_ASM 1
