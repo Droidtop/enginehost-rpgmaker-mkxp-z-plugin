@@ -115,6 +115,7 @@ if [[ ! -d "ruby19" ]]; then
   patch --directory=ruby19 --strip=1 < patches/ruby19-modern-baseruby.patch
   grep -Fq "'prefix'=>true" ruby19/tool/mkconfig.rb
   grep -Fq 'rb_f_notimplement(1, &pos, dir);' ruby19/dir.c
+  grep -Fq 'goto *(void *)GET_CURRENT_INSN();' ruby19/vm_exec.h
 fi
 
 echo "Done!"
