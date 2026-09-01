@@ -133,7 +133,12 @@
 #define TOOLCHAIN_SUPPORTS_ATTRIBUTE_CONSTRUCTOR /**/
 
 /* use ARM A64_NEON assembly optimizations */
-#define USE_ARM_A64_NEON 1
+/* Disabled to match pixman.mk, which does not compile the handwritten
+   ARM optimization sources (their GNU-as macro syntax is rejected by the
+   NDK integrated assembler). Leaving this defined makes pixman-arm.c call
+   _pixman_implementation_create_arm_simd/_arm_neon, which are then never
+   linked in. */
+/* #undef USE_ARM_A64_NEON */
 
 /* use ARM IWMMXT compiler intrinsics */
 /* #undef USE_ARM_IWMMXT */
