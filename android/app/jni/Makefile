@@ -146,7 +146,7 @@ RUBY19_CONFIGURE_ARGS := \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
-	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle,tk,curses,openssl
+	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle,tk,curses,openssl,ripper
 
 CONFIGURE := $(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS)
 CMAKE     := $(CONFIGURE_ENV) cmake .. $(CMAKE_ARGS)
