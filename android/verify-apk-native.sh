@@ -14,6 +14,12 @@ fail() {
   echo "verify-apk-native: $*" >&2
   echo "--- native libraries in $apk ---" >&2
   (cd "$tmp" && find lib -type f | sort) >&2 || echo "(no lib/ directory)" >&2
+  echo "--- SONAME / NEEDED of each mkxp and ruby library ---" >&2
+  for so in "$tmp"/lib/*/lib{ruby,mkxp-z-ruby}*.so; do
+    [ -f "$so" ] || continue
+    echo "${so#$tmp/}:" >&2
+    "$readelf" -d "$so" | grep -E '\(SONAME\)|\(NEEDED\)' >&2 || true
+  done
   exit 1
 }
 

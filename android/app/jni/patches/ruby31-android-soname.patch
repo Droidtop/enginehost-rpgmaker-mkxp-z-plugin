@@ -1,0 +1,23 @@
+--- a/configure.ac	2026-09-01 16:48:56.405297919 -0400
++++ b/configure.ac	2026-09-01 16:48:56.432734414 -0400
+@@ -3928,6 +3928,20 @@
+ AC_SUBST(XLDFLAGS)dnl
+ AC_SUBST(EXTLDFLAGS)dnl
+ AC_SUBST(EXTDLDFLAGS)dnl
++# Android's package format has no notion of versioned shared objects: the APK
++# ships a flat lib/<abi>/ directory and the loader resolves a DT_NEEDED entry
++# by file name alone. The generic linux branch above sets a versioned SONAME
++# (libruby31.so.3.1), which would be recorded in every consumer and could
++# never be resolved on device. Force the unversioned name, exactly as the
++# bundled Ruby 1.9 build does.
++AS_CASE(["$target_os"],
++  [*android*], [
++    LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT)'
++    LIBRUBY_SONAME='$(LIBRUBY_SO)'
++    LIBRUBY_ALIASES=''
++    LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).$(SOEXT)'
++    ])
++
+ AC_SUBST(LIBRUBY_LDSHARED)
+ AC_SUBST(LIBRUBY_DLDFLAGS)
+ AC_SUBST(RUBY_INSTALL_NAME)
