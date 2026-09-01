@@ -1,5 +1,9 @@
-LOCAL_PATH := $(call my-dir)/ruby31
-LOCAL_BUILD_PATH := $(call my-dir)/build-$(TARGET_ARCH_ABI)
+# `my-dir` follows the current include stack. By the time this file is read,
+# SDL_sound's nested Android.mk can be the most recent makefile, which makes
+# prebuilt paths resolve relative to the NDK build machinery. Android.mk keeps
+# the stable JNI root in L_PATH; use it for every Ruby path.
+LOCAL_PATH := $(L_PATH)/ruby31
+LOCAL_BUILD_PATH := $(L_PATH)/build-$(TARGET_ARCH_ABI)
 
 include $(CLEAR_VARS)
 
@@ -27,8 +31,8 @@ LOCAL_SRC_FILES := $(LOCAL_BUILD_PATH)/lib/libruby31.so
 
 include $(PREBUILT_SHARED_LIBRARY)
 
-LOCAL_PATH := $(call my-dir)/ruby19
-LOCAL_BUILD_PATH := $(call my-dir)/build-$(TARGET_ARCH_ABI)/ruby19
+LOCAL_PATH := $(L_PATH)/ruby19
+LOCAL_BUILD_PATH := $(L_PATH)/build-$(TARGET_ARCH_ABI)/ruby19
 
 include $(CLEAR_VARS)
 
