@@ -119,6 +119,21 @@ public class MainActivity extends SDLActivity
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
+        String capability = getIntent().getStringExtra("dev.enginehost.runtime.CAPABILITY_ID");
+        boolean useRuby19 = capability != null && capability.endsWith("-ruby19");
+        String bundleRoot = getIntent().getStringExtra("dev.enginehost.runtime.BUNDLE_ROOT");
+        if (bundleRoot != null) {
+            String rubyRuntime = useRuby19 ? "ruby19" : "ruby31";
+            String abi = Build.SUPPORTED_ABIS.length == 0 ? "" : Build.SUPPORTED_ABIS[0];
+            String common = new File(bundleRoot, "runtime/" + rubyRuntime + "/common").getAbsolutePath();
+            String nativeRuntime = new File(bundleRoot, "runtime/" + rubyRuntime + "/" + abi).getAbsolutePath();
+            try {
+                Os.setenv("RUBYLIB", common + File.pathSeparator + nativeRuntime, true);
+                Os.setenv("ENGINEHOST_BUNDLE_ROOT", new File(bundleRoot).getAbsolutePath(), true);
+            } catch (ErrnoException error) {
+                throw new IllegalStateException("Unable to configure bundled Ruby runtime", error);
+            }
+        }
         String engineHostPath = getIntent().getStringExtra("path");
         if (engineHostPath != null && new File(engineHostPath).isDirectory()) {
             GAME_PATH = new File(engineHostPath).getAbsolutePath();

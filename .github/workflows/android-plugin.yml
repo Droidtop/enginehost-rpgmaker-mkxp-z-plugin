@@ -31,14 +31,20 @@ jobs:
         run: |
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           make all ARCH=linux-x86_64 ABI=armeabi-v7a HOST=armv7a-linux-androideabi TARGET=arm-linux-androideabi
+          bash ./verify-native-build.sh armeabi-v7a
           make clean-iconv clean-openssl clean-ruby ARCH=linux-x86_64 ABI=arm64-v8a HOST=aarch64-linux-android TARGET=aarch64-linux-android
           make all ARCH=linux-x86_64 ABI=arm64-v8a HOST=aarch64-linux-android TARGET=aarch64-linux-android
+          bash ./verify-native-build.sh arm64-v8a
       - name: Generate embedded mkxp-z assets and shaders
         working-directory: android/app/jni
         run: bash ./generate_xxd.sh
       - name: Build APK
         working-directory: android
-        run: bash ./gradlew :app:assembleDebug --stacktrace
+        run: |
+          bash ./gradlew :app:assembleDebug --stacktrace
+          apk="$(find app/build/outputs/apk/debug -name '*universal*.apk' -print -quit)"
+          test -f "$apk"
+          bash ./verify-apk-native.sh "$apk"
       - name: Build signed internal Enginehost bundle
         if: startsWith(github.ref, 'refs/heads/plugin/')
         env:
@@ -52,6 +58,30 @@ jobs:
           unzip -q "$apk" 'classes*.dex' 'lib/*' -d build/payload
           test -f build/payload/classes.dex
           test "$(find build/payload -maxdepth 1 -name 'classes*.dex' | wc -l)" -eq 1
+          copy_ruby_runtime() {
+            runtime=$1
+            version=$2
+            for abi in armeabi-v7a arm64-v8a; do
+              source="android/app/jni/build-$abi/${runtime:+$runtime/}lib/ruby/$version"
+              if [ "$runtime" = ruby31 ]; then
+                source="android/app/jni/build-$abi/lib/ruby/$version"
+              fi
+              test -d "$source"
+              mkdir -p "build/payload/runtime/$runtime/$abi"
+              arch_dir="$(find "$source" -mindepth 1 -maxdepth 1 -type d \( -name '*linux*' -o -name '*android*' \) -print -quit)"
+              test -n "$arch_dir"
+              cp -a "$arch_dir"/. "build/payload/runtime/$runtime/$abi/"
+              if [ "$abi" = armeabi-v7a ]; then
+                mkdir -p "build/payload/runtime/$runtime/common"
+                find "$source" -mindepth 1 -maxdepth 1 ! -path "$arch_dir" -exec cp -a -t "build/payload/runtime/$runtime/common" -- {} +
+              fi
+            done
+          }
+          copy_ruby_runtime ruby19 1.9.1
+          copy_ruby_runtime ruby31 3.1.0
+          test -n "$(find build/payload/runtime/ruby19/armeabi-v7a -type f -name '*.so' -print -quit)"
+          test -n "$(find build/payload/runtime/ruby31/arm64-v8a -type f -name '*.so' -print -quit)"
+          test -f build/payload/runtime/ruby19/common/fileutils.rb
           cp enginehost/LICENSES.md build/payload/LICENSES.md
           cp COPYING build/payload/COPYING.mkxp-z
           cp THIRD_PARTY.md build/payload/THIRD_PARTY.md

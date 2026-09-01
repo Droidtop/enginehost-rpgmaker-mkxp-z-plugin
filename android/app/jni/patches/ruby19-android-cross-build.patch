@@ -1,0 +1,41 @@
+diff --git a/configure.in b/configure.in
+index 1cd2c40..f4830c8 100644
+--- a/configure.in
++++ b/configure.in
+@@ -2195,1 +2195,7 @@
++  AS_CASE(["$target_os"],
++    [*android*|*androideabi*], [
++      LIBRUBY_SO='lib$(RUBY_SO_NAME).so'
++      LIBRUBY_ALIASES=''
++      LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so'
++      ])
+ fi
+diff --git a/template/fake.rb.in b/template/fake.rb.in
+index 6b26627..c7a89f4 100644
+--- a/template/fake.rb.in
++++ b/template/fake.rb.in
+@@ -21,1 +21,12 @@
++# BASERUBY is modern Ruby and needs its own rbconfig long enough to load the
++# host FileUtils. It must not leak into target generators: mkmf would then use
++# the host compiler, linker and Ruby ABI for Android encodings/extensions.
++host_rbconfig = Object.const_get(:RbConfig) if Object.const_defined?(:RbConfig)
++Object.send(:remove_const, :RbConfig) if host_rbconfig
++if host_rbconfig && Object.const_defined?(:Config) &&
++   Object.const_get(:Config).equal?(host_rbconfig)
++  Object.send(:remove_const, :Config)
++end
++$LOADED_FEATURES.delete_if {|path| path.end_with?("/rbconfig.rb")}
++
+ $:.unshift(File.expand_path("..", __FILE__))
+diff --git a/enc/make_encmake.rb b/enc/make_encmake.rb
+index 75af2ec..8553b09 100755
+--- a/enc/make_encmake.rb
++++ b/enc/make_encmake.rb
+@@ -10,1 +10,7 @@
+ require 'erb'
++target_cc = CONFIG["CC"].to_s
++unless target_cc =~ %r{/(?:armv7a-linux-androideabi|aarch64-linux-android)[0-9]+-clang\z}
++  abort "refusing to generate Android encodings with non-target compiler: " +
++        target_cc
++end
++

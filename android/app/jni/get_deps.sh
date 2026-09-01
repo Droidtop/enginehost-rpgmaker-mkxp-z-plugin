@@ -114,11 +114,15 @@ if [[ ! -d "ruby19" ]]; then
   # the surrounding plugin repository and leave the tarball untouched.
   patch --directory=ruby19 --strip=1 < patches/ruby19-modern-baseruby.patch
   patch --directory=ruby19 --strip=1 < patches/ruby19-encoding-config-header.patch
+  patch --directory=ruby19 --strip=1 < patches/ruby19-android-cross-build.patch
   grep -Fq "'prefix'=>true" ruby19/tool/mkconfig.rb
   grep -Fq 'rb_f_notimplement(1, &pos, dir);' ruby19/dir.c
   grep -Fq 'goto *(void *)GET_CURRENT_INSN();' ruby19/vm_exec.h
   grep -Fq 'int rb_get_next_signal(void);' ruby19/thread.c
   grep -Fq 'cp "$(arch_hdrdir)/ruby/config.h" config.h' ruby19/common.mk
+  grep -Fq 'host_rbconfig = Object.const_get(:RbConfig)' ruby19/template/fake.rb.in
+  grep -Fq "LIBRUBY_SO='lib\$(RUBY_SO_NAME).so'" ruby19/configure.in
+  grep -Fq 'refusing to generate Android encodings with non-target compiler' ruby19/enc/make_encmake.rb
 fi
 
 echo "Done!"
