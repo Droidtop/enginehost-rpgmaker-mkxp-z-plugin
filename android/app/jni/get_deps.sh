@@ -30,8 +30,14 @@ fi
 # GNU libiconv
 if [[ ! -d "libiconv" ]]; then
   echo "Downloading libiconv..."
+  # ftpmirror.gnu.org is a redirector to volunteer mirrors and periodically
+  # serves 502 for every retry, which fails the whole build. Fall back to the
+  # canonical GNU host, then verify what we actually got.
   curl --fail --location --retry 5 --retry-all-errors --output libiconv-1.17.tar.gz \
-    https://ftpmirror.gnu.org/libiconv/libiconv-1.17.tar.gz
+    https://ftpmirror.gnu.org/libiconv/libiconv-1.17.tar.gz \
+  || curl --fail --location --retry 5 --retry-all-errors --output libiconv-1.17.tar.gz \
+    https://ftp.gnu.org/gnu/libiconv/libiconv-1.17.tar.gz
+  echo "8f74213b56238c85a50a5329f77e06198771e70dd9a739779f4c02f65d971313  libiconv-1.17.tar.gz" | sha256sum --check --strict
   tar -xzf libiconv-1.17.tar.gz
   mv libiconv-1.17 libiconv
   rm -f libiconv-1.17.tar.gz
