@@ -116,6 +116,7 @@ if [[ ! -d "ruby19" ]]; then
   grep -Fq "'prefix'=>true" ruby19/tool/mkconfig.rb
   grep -Fq 'rb_f_notimplement(1, &pos, dir);' ruby19/dir.c
   grep -Fq 'goto *(void *)GET_CURRENT_INSN();' ruby19/vm_exec.h
+  grep -Fq 'int rb_get_next_signal(void);' ruby19/thread.c
 fi
 
 echo "Done!"

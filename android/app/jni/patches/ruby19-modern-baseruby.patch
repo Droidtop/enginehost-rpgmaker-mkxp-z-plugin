@@ -40,3 +40,14 @@ index 9ed457e..19b20cb 100644
    ;
  
  #else
+diff --git a/thread.c b/thread.c
+index 2a1ca64..6a40311 100644
+--- a/thread.c
++++ b/thread.c
+@@ -64,6 +64,7 @@ static void rb_check_deadlock(rb_vm_t *vm);
+ 
+ int rb_signal_buff_size(void);
++int rb_get_next_signal(void);
+ void rb_signal_exec(rb_thread_t *th, int sig);
+ void rb_disable_interrupt(void);
+ void rb_thread_stop_timer_thread(void);
