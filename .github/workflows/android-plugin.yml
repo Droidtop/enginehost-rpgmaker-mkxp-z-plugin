@@ -66,7 +66,25 @@ jobs:
           cp "$apk" build/payload/runtime.apk
           unzip -q "$apk" 'classes*.dex' 'lib/*' -d build/payload
           test -f build/payload/classes.dex
-          test "$(find build/payload -maxdepth 1 -name 'classes*.dex' | wc -l)" -eq 1
+          # Multidex is expected: two Ruby runtimes plus mkxp-z do not fit
+          # in one dex. Record what is actually there, in load order, so
+          # the bundle declares every dex rather than the first one.
+          python3 - <<'DEXES'
+          import json, pathlib, re
+          payload = pathlib.Path('build/payload')
+          def order(p):
+              # classes.dex, classes2.dex, ... classes10.dex -- numeric,
+              # since a lexical sort puts 10 before 2.
+              m = re.fullmatch(r'classes(\d*)\.dex', p.name)
+              return int(m.group(1) or 1)
+          dexes = sorted(payload.glob('classes*.dex'), key=order)
+          assert dexes, 'no classes*.dex in the APK payload'
+          meta = pathlib.Path('enginehost/bundle-metadata.json')
+          data = json.loads(meta.read_text())
+          data['dexFiles'] = [d.name for d in dexes]
+          meta.write_text(json.dumps(data, indent=2) + '\n')
+          print('dexFiles =', data['dexFiles'])
+          DEXES
           copy_ruby_runtime() {
             runtime=$1
             version=$2
