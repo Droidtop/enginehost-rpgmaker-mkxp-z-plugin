@@ -124,6 +124,7 @@ if [[ ! -d "ruby19" ]]; then
   grep -Fq "LIBRUBY_SO='lib\$(RUBY_SO_NAME).so'" ruby19/configure.in
   grep -Fq 'refusing to generate Android encodings with non-target compiler' ruby19/enc/make_encmake.rb
   grep -Fq '__ANDROID_API__ >= 26' ruby19/ext/nkf/nkf-utf8/nkf.c
+  grep -Fq '#  define CharNext(p) ((p) + 1)' ruby19/eval_intern.h
 fi
 
 echo "Done!"
