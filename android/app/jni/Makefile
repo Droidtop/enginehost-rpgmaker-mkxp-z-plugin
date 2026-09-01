@@ -243,8 +243,8 @@ clean-openssl:
 	-cd openssl; make clean; rm Makefile
 
 clean-ruby:
-	-cd ruby31; make clean; rm Makefile; rm configure
-	-cd ruby19; make clean; rm Makefile; rm configure
+	-if [ -f ruby31/Makefile ]; then $(MAKE) -C ruby31 distclean; fi
+	-if [ -f ruby19/Makefile ]; then $(MAKE) -C ruby19 distclean; fi
 
 clean: clean-iconv clean-openal clean-openssl clean-ruby
 
