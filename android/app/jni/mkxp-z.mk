@@ -17,6 +17,17 @@ LOCAL_CPPFLAGS := \
 	-Wno-undefined-var-template \
 	-Wno-uninitialized
 
+# Ruby 1.9's installed public ruby/version.h intentionally omits numeric
+# version macros. Tell the shared binding compatibility layer which API this
+# namespaced engine module is compiled against; otherwise it mistakes 1.9 for
+# an older Ruby and enables conflicting 1.8 shims.
+ifeq ($(ENGINEHOST_RUBY_MODULE),ruby19)
+LOCAL_CPPFLAGS += \
+	-DMKXPZ_RUBY_API_VERSION_MAJOR=1 \
+	-DMKXPZ_RUBY_API_VERSION_MINOR=9 \
+	-DMKXPZ_RUBY_API_VERSION_TEENY=1
+endif
+
 LOCAL_C_INCLUDES := \
 	$(LOCAL_BUILD_PATH)/include \
 	$(LOCAL_PATH)/xxd/assets \
