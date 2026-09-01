@@ -122,6 +122,7 @@ OPENAL_CONFIGURE_ARGS := \
 # Ruby configure arguments to build
 RUBY31_CONFIGURE_ARGS := \
 	--prefix="$(RUBY_PREFIX)" \
+	--with-soname=ruby31 \
 	--enable-shared \
 	--enable-static \
 	--enable-install-static-library \
@@ -197,11 +198,16 @@ $(LIBDIR)/libruby31.so: ruby31/Makefile
 	# the other native libraries.
 	cd ruby31; make -j1; make install-all \
 		'INSTALL_DOC_OPTS=--exclude=doc --exclude=default-gems --exclude=default-gems-comm --exclude=default-gems-arch --exclude=bundled-gems'
-	cp $(LIBDIR)/libruby.so.3.1.0 $@
 
+# --with-soname and the android hunk in patches/ruby31-android-soname.patch
+# make Ruby install lib/libruby31.so directly, with a matching SONAME, so
+# there is nothing left to rename afterwards.
+#
+# Setting DLDFLAGS here used to be how the SONAME was meant to be overridden.
+# It never worked: configure seeds LIBRUBY_DLDFLAGS from it and then appends
+# its own '-Wl,-soname,$(LIBRUBY_SONAME)', which wins as the later flag.
 ruby31/Makefile: ruby31/configure
-	cd ruby31; DLDFLAGS="-Wl,-soname,libruby31.so" \
-	$(CONFIGURE) $(RUBY31_CONFIGURE_ARGS)
+	cd ruby31; $(CONFIGURE) $(RUBY31_CONFIGURE_ARGS)
 
 ruby31/configure: ruby31/configure.ac
 	cd ruby31; autoreconf -i

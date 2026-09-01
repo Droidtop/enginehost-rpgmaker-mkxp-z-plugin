@@ -104,6 +104,11 @@ if [[ ! -d "ruby31" ]]; then
   git -C ruby31 remote add origin https://github.com/mkxp-z/ruby
   git -C ruby31 fetch -q --depth 1 origin a2d396ea42e1ec778bc516489afe7fde6f0cef5d
   git -C ruby31 -c advice.detachedHead=false checkout -q FETCH_HEAD
+  # Android cannot package a versioned .so, and a consumer records whatever
+  # SONAME the library carries. Ruby's generic linux branch stamps
+  # libruby31.so.3.1; force the flat name the same way Ruby 1.9 does.
+  patch --directory=ruby31 --strip=1 < patches/ruby31-android-soname.patch
+  grep -Fq "LIBRUBY_DLDFLAGS='-Wl,-soname,lib\$(RUBY_SO_NAME).\$(SOEXT)'" ruby31/configure.ac
 fi
 
 # Official Ruby 1.9.2-p320, the language runtime used by RGSS3/VX Ace.
