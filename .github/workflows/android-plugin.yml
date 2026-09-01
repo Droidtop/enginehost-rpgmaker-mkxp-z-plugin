@@ -42,14 +42,23 @@ jobs:
         working-directory: android
         run: |
           bash ./gradlew :app:assembleDebug --stacktrace
+          echo "APKs produced:"
+          ls -l app/build/outputs/apk/debug
           apk="$(find app/build/outputs/apk/debug -name '*universal*.apk' -print -quit)"
-          test -f "$apk"
+          if [ -z "$apk" ]; then
+            echo "no universal APK found in app/build/outputs/apk/debug" >&2
+            exit 1
+          fi
+          echo "selected $apk"
           bash ./verify-apk-native.sh "$apk"
       - name: Build signed internal Enginehost bundle
         if: startsWith(github.ref, 'refs/heads/plugin/')
         env:
           ENGINEHOST_SIGNING_KEY_PEM: ${{ secrets.ENGINEHOST_SIGNING_KEY_PEM }}
         run: |
+          # This step is a long chain of bare `test`s; without tracing, any one
+          # of them fails the job silently after a ~25 minute build.
+          set -x
           test -n "$ENGINEHOST_SIGNING_KEY_PEM"
           apk="$(find android/app/build/outputs/apk/debug -name '*universal*.apk' -print -quit)"
           test -f "$apk"
@@ -85,7 +94,9 @@ jobs:
           cp enginehost/LICENSES.md build/payload/LICENSES.md
           cp COPYING build/payload/COPYING.mkxp-z
           cp THIRD_PARTY.md build/payload/THIRD_PARTY.md
+          set +x  # keep the signing key out of the trace
           printf '%s' "$ENGINEHOST_SIGNING_KEY_PEM" > build/signing-key.pem
+          set -x
           python3 enginehost-tooling/scripts/build-engine-bundle.py \
             --metadata enginehost/bundle-metadata.json --payload build/payload \
             --private-key build/signing-key.pem \
