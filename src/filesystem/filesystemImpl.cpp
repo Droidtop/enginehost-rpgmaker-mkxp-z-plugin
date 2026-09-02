@@ -99,6 +99,12 @@ std::string filesystemImpl::normalizePath(const char *path, bool preferred, bool
 
 std::string filesystemImpl::getDefaultGameRoot() {
     char *p = SDL_GetBasePath();
+    // SDL_GetBasePath() legitimately returns NULL on some platforms
+    // (Android among them); constructing std::string from NULL is
+    // undefined and crashed on exactly that. The current directory is
+    // the only sane answer left.
+    if (!p)
+        return std::string(".");
     std::string ret(p);
     SDL_free(p);
     return ret;

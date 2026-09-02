@@ -164,6 +164,17 @@ public class MainActivity extends SDLActivity
         String engineHostPath = getIntent().getStringExtra("dev.enginehost.runtime.PATH");
         if (engineHostPath != null && new File(engineHostPath).isDirectory()) {
             GAME_PATH = new File(engineHostPath).getAbsolutePath();
+            // The native side never sees GAME_PATH: main() resolves the game
+            // root from getenv("SRCDIR") and otherwise falls back to
+            // SDL_GetBasePath(), which is NULL on Android -- and
+            // std::string(nullptr) took the whole process down in
+            // getDefaultGameRoot(). Hand it the directory the way it
+            // already knows how to read.
+            try {
+                Os.setenv("SRCDIR", GAME_PATH, true);
+            } catch (ErrnoException error) {
+                throw new IllegalStateException("Unable to pass the game directory", error);
+            }
         }
         String engineHostOptions = getIntent().getStringExtra("dev.enginehost.runtime.OPTIONS");
         if (engineHostOptions != null) {
