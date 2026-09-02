@@ -2,6 +2,7 @@ package com.hatkid.mkxpz.gamepad;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
 import android.view.InputDevice;
@@ -65,8 +66,20 @@ public class Gamepad
     @SuppressLint("ClickableViewAccessibility")
     public void attachTo(Context context, ViewGroup viewGroup)
     {
-        // Setup layout of in-screen gamepad
-        LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        // Setup layout of in-screen gamepad.
+        // LayoutInflater resolves custom view classes (GamepadDPad, GamepadButton)
+        // through Context.getClassLoader(). When this code is hosted out of an
+        // enginehost bundle, the activity's base context reports the host APK's
+        // class loader, which cannot see our classes -- so inflate through a
+        // context that reports the loader this class was actually loaded with.
+        Context inflateContext = new ContextWrapper(context) {
+            @Override
+            public ClassLoader getClassLoader()
+            {
+                return Gamepad.class.getClassLoader();
+            }
+        };
+        LayoutInflater inflater = LayoutInflater.from(context).cloneInContext(inflateContext);
         ViewGroup layout = (ViewGroup) inflater.inflate(R.layout.gamepad_layout, viewGroup);
         mGamepadLayout = layout.findViewById(R.id.gamepad_layout);
 
