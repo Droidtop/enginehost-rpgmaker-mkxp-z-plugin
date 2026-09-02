@@ -161,7 +161,7 @@ public class MainActivity extends SDLActivity
                 throw new IllegalStateException("Unable to configure bundled Ruby runtime", error);
             }
         }
-        String engineHostPath = getIntent().getStringExtra("path");
+        String engineHostPath = getIntent().getStringExtra("dev.enginehost.runtime.PATH");
         if (engineHostPath != null && new File(engineHostPath).isDirectory()) {
             GAME_PATH = new File(engineHostPath).getAbsolutePath();
         }
