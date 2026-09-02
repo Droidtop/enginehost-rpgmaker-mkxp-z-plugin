@@ -52,6 +52,176 @@
       "runtimeComponents": {"ruby": "1.9.2"}
     }
   ],
+  "declaredOptions": [
+    {
+      "key": "RTP",
+      "label": "RTP folders",
+      "type": "path",
+      "repeats": true,
+      "description": "Extra folders mounted into the game's file system so RTP assets resolve. Read as the mkxp.json key RTP (src/config.cpp:340)."
+    },
+    {
+      "key": "patches",
+      "label": "Patch folders",
+      "type": "path",
+      "repeats": true,
+      "description": "Folders mounted over the game's own files, so a mod or translation can replace assets and scripts without touching the game (src/config.cpp:341)."
+    },
+    {
+      "key": "rubyLoadpath",
+      "label": "Ruby load paths",
+      "type": "path",
+      "repeats": true,
+      "description": "Folders appended to Ruby's $LOAD_PATH before the game starts (src/config.cpp:351)."
+    },
+    {
+      "key": "customScript",
+      "label": "Custom script file",
+      "type": "string",
+      "repeats": false,
+      "description": "Ruby script run instead of the game's own script bundle. A file path, relative to the game folder (src/config.cpp:334)."
+    },
+    {
+      "key": "preloadScript",
+      "label": "Preload script files",
+      "type": "string",
+      "repeats": true,
+      "description": "Ruby script files run before the game's scripts. File paths, relative to the game folder (src/config.cpp:338)."
+    },
+    {
+      "key": "postloadScript",
+      "label": "Postload script files",
+      "type": "string",
+      "repeats": true,
+      "description": "Ruby script files run after the game's scripts (src/config.cpp:339)."
+    },
+    {
+      "key": "rgssVersion",
+      "label": "RGSS version",
+      "type": "number",
+      "repeats": false,
+      "description": "Forces the RGSS version: 0 detects it from the game, 1 is XP, 2 is VX, 3 is VX Ace (src/config.cpp:272)."
+    },
+    {
+      "key": "fullscreen",
+      "label": "Fullscreen",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Starts the game fullscreen (src/config.cpp:293)."
+    },
+    {
+      "key": "fixedAspectRatio",
+      "label": "Keep aspect ratio",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Letterboxes rather than stretching the game to the screen (src/config.cpp:294)."
+    },
+    {
+      "key": "smoothScaling",
+      "label": "Upscaling filter",
+      "type": "number",
+      "repeats": false,
+      "description": "Filter used when the game is scaled up: 0 nearest neighbour, 1 bilinear, 2 bicubic, 3 Lanczos3 (src/config.cpp:295, src/etc/etc.h:205)."
+    },
+    {
+      "key": "integerScalingActive",
+      "label": "Integer scaling",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Scales only by whole multiples, keeping pixels square (src/config.cpp:323)."
+    },
+    {
+      "key": "enableHires",
+      "label": "High-resolution rendering",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Renders above the game's native resolution; costs memory and speed (src/config.cpp:304)."
+    },
+    {
+      "key": "textureScalingFactor",
+      "label": "Texture scaling factor",
+      "type": "number",
+      "repeats": false,
+      "description": "Multiplier applied to textures when high-resolution rendering is on (src/config.cpp:305)."
+    },
+    {
+      "key": "vsync",
+      "label": "Vertical sync",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Synchronises presentation with the display refresh (src/config.cpp:309)."
+    },
+    {
+      "key": "fpsLimit",
+      "label": "Frame rate cap",
+      "type": "number",
+      "repeats": false,
+      "description": "Caps the frame rate; 0 leaves the game's own rate alone. Passed to mkxp-z as fixedFramerate (src/config.cpp:311)."
+    },
+    {
+      "key": "frameSkip",
+      "label": "Frame skipping",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Lets the engine drop frames to keep game time correct when it cannot keep up (src/config.cpp:312)."
+    },
+    {
+      "key": "defScreenW",
+      "label": "Window width",
+      "type": "number",
+      "repeats": false,
+      "description": "Starting width in pixels; 0 uses the RGSS default for the game's version (src/config.cpp:273)."
+    },
+    {
+      "key": "defScreenH",
+      "label": "Window height",
+      "type": "number",
+      "repeats": false,
+      "description": "Starting height in pixels; 0 uses the RGSS default for the game's version (src/config.cpp:274)."
+    },
+    {
+      "key": "midiSoundFont",
+      "label": "MIDI SoundFont file",
+      "type": "string",
+      "repeats": false,
+      "description": "SoundFont file used to play the game's MIDI music. A file path (src/config.cpp:329)."
+    },
+    {
+      "key": "solidFonts",
+      "label": "Fonts drawn without anti-aliasing",
+      "type": "string",
+      "repeats": true,
+      "description": "Font names that must be rendered with hard pixel edges, as pixel-art fonts expect (src/config.cpp:314, Config::fontIsSolid)."
+    },
+    {
+      "key": "fontSub",
+      "label": "Font substitutions",
+      "type": "string",
+      "repeats": true,
+      "description": "Replacements for fonts the game asks for but the device lacks, each written as 'missing>replacement' (src/config.cpp:342, src/display/font.cpp:158)."
+    },
+    {
+      "key": "enableSettings",
+      "label": "Allow the F1 settings menu",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Enables mkxp-z's own settings menu during play (src/config.cpp:328, src/eventthread.cpp:343)."
+    },
+    {
+      "key": "enableReset",
+      "label": "Allow F12 reset",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Enables the engine's reset key (src/config.cpp:327, src/eventthread.cpp:398)."
+    },
+    {
+      "key": "allowSymlinks",
+      "label": "Follow symbolic links",
+      "type": "boolean",
+      "repeats": false,
+      "description": "Lets the game's file system follow symbolic links, which some repacked games rely on (src/config.cpp:265, src/filesystem/filesystem.cpp:315)."
+    }
+  ],
   "source": {
     "upstream": "https://github.com/mkxp-z/mkxp-z",
     "androidPort": "https://github.com/thehatkid/mkxp-z-android",

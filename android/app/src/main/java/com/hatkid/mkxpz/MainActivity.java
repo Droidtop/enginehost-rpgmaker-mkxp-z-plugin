@@ -27,6 +27,8 @@ import android.system.Os;
 import java.util.Locale;
 import java.io.File;
 
+import org.json.JSONObject;
+
 import org.libsdl.app.SDLActivity;
 import com.hatkid.mkxpz.gamepad.Gamepad;
 import com.hatkid.mkxpz.gamepad.GamepadConfig;
@@ -116,6 +118,31 @@ public class MainActivity extends SDLActivity
         }
     };
 
+
+    /**
+     * Enginehost spells a handful of options the same way for every engine so
+     * that a user learns them once. mkxp-z reads its own historic names, so
+     * translate the shared spellings here rather than teaching the config
+     * editor an engine-specific vocabulary. A value the game already gives
+     * under mkxp-z's own name wins, and anything unrecognised is passed
+     * through untouched so a user can still set any mkxp.json key by hand.
+     */
+    private static String withSharedOptionNames(String optionsJson)
+    {
+        try {
+            JSONObject options = new JSONObject(optionsJson);
+            if (options.has("fpsLimit") && !options.has("fixedFramerate")) {
+                options.put("fixedFramerate", options.get("fpsLimit"));
+            }
+            options.remove("fpsLimit");
+            return options.toString();
+        } catch (Exception error) {
+            // Not an object we can rewrite; mkxp-z reports its own parse failure.
+            Log.w(TAG, "Could not normalise enginehost options: " + error);
+            return optionsJson;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -141,7 +168,7 @@ public class MainActivity extends SDLActivity
         String engineHostOptions = getIntent().getStringExtra("dev.enginehost.runtime.OPTIONS");
         if (engineHostOptions != null) {
             try {
-                Os.setenv("ENGINEHOST_OPTIONS", engineHostOptions, true);
+                Os.setenv("ENGINEHOST_OPTIONS", withSharedOptionNames(engineHostOptions), true);
             } catch (ErrnoException error) {
                 throw new IllegalStateException("Unable to pass enginehost options", error);
             }
