@@ -78,24 +78,6 @@
             <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="true" />
         </activity>
 
-        <activity
-            android:name=".EngineHostRunActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="dev.enginehost.plugin.RUN" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <meta-data android:name="dev.enginehost.plugin.engine" android:value="rpgmaker" />
-            <meta-data android:name="dev.enginehost.plugin.pluginVersion" android:value="0.1.0" />
-            <meta-data android:name="dev.enginehost.plugin.capabilities" android:resource="@raw/enginehost_capabilities" />
-        </activity>
-
-        <activity
-            android:name=".WebGameActivity"
-            android:configChanges="keyboardHidden|orientation|screenSize"
-            android:screenOrientation="sensorLandscape"
-            android:exported="false" />
-
         <!-- Main activity + Debug mode -->
         <!-- You can remove or disable this if not needed -->
         <activity-alias
