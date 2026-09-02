@@ -1,0 +1,16 @@
+{
+  "description": "Enginehost plugin implementation repository for mkxp-z",
+  "engine": "rpgmaker",
+  "engineContexts": [
+    "xp",
+    "vx",
+    "vxace"
+  ],
+  "formatVersion": 1,
+  "implementation": {
+    "id": "mkxp-z",
+    "name": "mkxp-z",
+    "upstream": "https://github.com/mkxp-z/mkxp-z"
+  },
+  "origin": "https://github.com/droidtop/enginehost-rpgmaker-mkxp-z-plugin"
+}
