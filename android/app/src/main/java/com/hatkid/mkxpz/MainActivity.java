@@ -188,7 +188,10 @@ public class MainActivity extends SDLActivity
         // Get Debug flag
         try {
             ActivityInfo actInfo = getPackageManager().getActivityInfo(this.getComponentName(), PackageManager.GET_META_DATA);
-            DEBUG = actInfo.metaData.getBoolean("mkxp_debug");
+            // metaData is null when this activity is not the one declared in the
+            // manifest: under enginehost the component is its BundledActivityProxy,
+            // which carries no <meta-data> of ours. Absent means "not debug".
+            DEBUG = actInfo.metaData != null && actInfo.metaData.getBoolean("mkxp_debug");
         } catch (PackageManager.NameNotFoundException e) {
             Log.w(TAG, "Failed to set debug flag: " + e);
             e.printStackTrace();
