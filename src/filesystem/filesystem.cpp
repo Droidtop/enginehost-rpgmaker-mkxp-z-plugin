@@ -33,6 +33,11 @@
 
 #include <physfs.h>
 
+#ifdef __ANDROID__
+#include <SDL_system.h>
+#include <jni.h>
+#endif
+
 #include <algorithm>
 #include <stack>
 #include <stdio.h>
@@ -295,7 +300,23 @@ static void throwPhysfsError(const char *desc) {
 }
 
 FileSystem::FileSystem(const char *argv0, bool allowSymlinks) {
-  if (PHYSFS_init(argv0) == 0)
+#ifdef __ANDROID__
+  /* PhysFS on Android does not want argv0. It casts whatever pointer it is
+   * given to a PHYSFS_AndroidInit and dereferences the JNIEnv inside, and
+   * SDL's argv[0] is the literal string "app_process", so passing it through
+   * faults with the string's bytes as the address. Hand it the struct it
+   * actually reads. Neither reference is kept past PHYSFS_init. */
+  JNIEnv *env = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
+  jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
+  PHYSFS_AndroidInit ainit = { env, activity };
+  int initialized = PHYSFS_init(reinterpret_cast<const char *>(&ainit));
+  if (activity)
+    env->DeleteLocalRef(activity);
+  (void)argv0;
+#else
+  int initialized = PHYSFS_init(argv0);
+#endif
+  if (initialized == 0)
     throwPhysfsError("Error initializing PhysFS");
 
   /* One error (=return 0) turns the whole product to 0 */
