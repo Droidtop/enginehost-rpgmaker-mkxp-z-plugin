@@ -150,6 +150,16 @@ RUBY19_CONFIGURE_ARGS := \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle,tk,curses,openssl,ripper
 
 CONFIGURE := $(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS)
+
+# Ruby's own makes must not inherit this Makefile's command-line variables.
+# GNU make forwards them to every sub-make through MAKEFLAGS, and Ruby's
+# per-extension Makefiles name the extension in a variable called TARGET.
+# With TARGET=aarch64-linux-android inherited, every extension linked as
+# aarch64-linux-android.so and installed over the previous one: the bundle
+# shipped one nameless .so per directory and no zlib, bigdecimal or
+# digest/md5 at all. Clearing MAKEFLAGS for the child gives Ruby its own
+# variables back; the explicit -j below replaces the lost jobserver.
+RUBY_MAKE := env MAKEFLAGS= MAKELEVEL= make
 CMAKE     := $(CONFIGURE_ENV) cmake .. $(CMAKE_ARGS)
 
 
@@ -196,7 +206,7 @@ $(LIBDIR)/libruby31.so: ruby31/Makefile
 	# linked before a static extension archive (for example bigdecimal.a)
 	# exists. Keep this one dependency serialized and preserve parallelism for
 	# the other native libraries.
-	cd ruby31; make -j1; make install-all \
+	cd ruby31; $(RUBY_MAKE) -j1; $(RUBY_MAKE) install-all \
 		'INSTALL_DOC_OPTS=--exclude=doc --exclude=default-gems --exclude=default-gems-comm --exclude=default-gems-arch --exclude=bundled-gems'
 
 # --with-soname and the android hunk in patches/ruby31-android-soname.patch
@@ -215,7 +225,7 @@ ruby31/configure: ruby31/configure.ac
 ruby19: init $(RUBY19_LIBDIR)/libruby19.so
 
 $(RUBY19_LIBDIR)/libruby19.so: ruby19/Makefile
-	cd ruby19; make -j1 && make install-nodoc
+	cd ruby19; $(RUBY_MAKE) -j1 && $(RUBY_MAKE) install-nodoc
 
 ruby19/Makefile: ruby19/configure
 	# Release tarballs already contain configure, so the configure-generation
