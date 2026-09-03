@@ -353,18 +353,29 @@ class Win32API
 	LOG_NATIVE = false unless const_defined?("LOG_NATIVE")
 
 	alias_method :mkxp_native_initialize, :initialize
+	def impl_defined?(mod, name)
+		mod.const_defined?(name)
+	rescue NameError
+		false
+	end
+
 	def initialize(dll, func, *args)
 		@dll = dll
 		@func = func
 		@called = false
 
-		dll = kappatalize(dll.chomp(".dll"))
+		# Games name DLLs as paths ("System/WFExit") and with extensions;
+		# only the bare name can become a constant, and an invalid constant
+		# name must count as "no implementation", not as an exception the
+		# game's own rescue turns into "cannot read modules".
+		# (Enginehost edit, 2026, CC0 like the rest of this file.)
+		dll = kappatalize(File.basename(dll.to_s).chomp(".dll"))
 		func = kappatalize(func)
 
 		if !System.is_windows? or !NATIVE_ON_WINDOWS
-			if Win32API_Impl.const_defined?(dll)
+			if impl_defined?(Win32API_Impl, dll)
 				dll_impl = Win32API_Impl.const_get(dll)
-				if dll_impl.const_defined?(func)
+				if impl_defined?(dll_impl, func)
 					@mkxp_wrap_impl = dll_impl.const_get(func).new
 					return
 				end
