@@ -190,6 +190,12 @@ public class MainActivity extends SDLActivity
                 throw new IllegalStateException("Unable to configure bundled Ruby runtime", error);
             }
         }
+        // Standalone, the manifest asks for landscape. Under enginehost the
+        // component is the host's proxy with no orientation of its own, so a
+        // phone held any way up got a portrait window and RPG Maker's 640x480
+        // frame sat unscaled in one corner. Every RGSS game is a landscape
+        // game; say so before the window exists.
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         String engineHostPath = getIntent().getStringExtra("dev.enginehost.runtime.PATH");
         if (engineHostPath != null && new File(engineHostPath).isDirectory()) {
             GAME_PATH = new File(engineHostPath).getAbsolutePath();
