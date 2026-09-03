@@ -341,6 +341,14 @@ int main(int argc, char *argv[]) {
       winFlags |= SDL_WINDOW_RESIZABLE;
     if (conf.fullscreen)
       winFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+#ifdef __ANDROID__
+    /* On Android the window is the surface; a window asked for at the
+     * game's own resolution keeps that logical size and the frame lands
+     * unscaled in a corner of the screen. Fullscreen makes SDL size the
+     * window to the surface, after which the renderer letterboxes the game
+     * into it (fixedAspectRatio). JoiPlay's mkxp fork does the same. */
+    winFlags |= SDL_WINDOW_FULLSCREEN;
+#endif
     
 #ifdef GLES2_HEADER
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
