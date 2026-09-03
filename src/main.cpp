@@ -355,6 +355,14 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
     
+#ifdef __ANDROID__
+    /* SDL decides the Android orientation from the window it is asked for:
+     * a resizable window with no hint means "follow the sensor", and a
+     * handheld lying on a desk reports portrait, so RPG Maker's 640x480
+     * frame ended up unscaled in a corner of a portrait surface. Every RGSS
+     * game is a landscape game; say so before the window exists. */
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
     win = SDL_CreateWindow(conf.windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED,
                            SDL_WINDOWPOS_UNDEFINED, conf.defScreenW,
                            conf.defScreenH, winFlags);
