@@ -62,6 +62,8 @@ echo "native preflight passed for $abi"
 # erases it before the next ABI builds, so print it here or lose it.
 ruby19_ext_dir=$(find "$root/ruby19/lib/ruby/1.9.1" -mindepth 1 -maxdepth 1 -type d -name '*android*' | head -n 1)
 test -n "$ruby19_ext_dir" || fail "no Ruby 1.9 architecture directory under $root/ruby19/lib/ruby/1.9.1"
+# zlib is what RGSS games require by name; the others are the canaries that
+# showed mkmf probes failing wholesale, so their logs are worth printing too.
 missing=()
 for extension in zlib socket syslog stringio strscan; do
   test -f "$ruby19_ext_dir/$extension.so" || missing+=("$extension")

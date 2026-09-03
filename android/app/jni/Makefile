@@ -141,12 +141,25 @@ RUBY31_CONFIGURE_ARGS := \
 RUBY19_HOST_RBCONFIG := $(shell ruby --disable-gems -rrbconfig -e 'print $$LOADED_FEATURES.grep(%r{/rbconfig[.]rb$$}).first')
 RUBY19_HOST_FILEUTILS := $(shell ruby --disable-gems -rfileutils -e 'print $$LOADED_FEATURES.grep(%r{/fileutils[.]rb$$}).first')
 RUBY19_HOST_COMPAT := $(CURDIR)/ruby19-modern-host.rb
+# Ruby 1.9.2's mkmf probes are 2010 C: `int t() { deflateReset(); return 0; }`
+# with no prototype in sight. Clang 16 and later (NDK 27) reject implicit
+# function declarations as errors, so every have_func/have_library probe
+# failed and zlib, syslog and socket were silently left out of the runtime
+# (RGSS3 games require zlib by name). Let the probes compile the way their
+# author's compiler did; the flags only relax what became an error later.
+RUBY19_COMPAT_CFLAGS := \
+	-Wno-error=implicit-function-declaration \
+	-Wno-error=implicit-int \
+	-Wno-error=int-conversion \
+	-Wno-error=incompatible-function-pointer-types \
+	-Wno-error=incompatible-pointer-types
 RUBY19_CONFIGURE_ARGS := \
 	--prefix="$(RUBY19_PREFIX)" \
 	--with-baseruby="$$(command -v ruby) --disable-gems -r$(RUBY19_HOST_RBCONFIG) -r$(RUBY19_HOST_FILEUTILS) -r$(RUBY19_HOST_COMPAT)" \
 	--with-soname=ruby19 \
 	--enable-shared \
 	--disable-install-doc \
+	--disable-ipv6 \
 	--with-out-ext=readline,dbm,gdbm,win32,win32ole,fiddle,tk,curses,openssl,ripper
 
 CONFIGURE := $(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS)
@@ -235,7 +248,8 @@ ruby19/Makefile: ruby19/configure
 	cp "$$(automake --print-libdir)/config.sub" ruby19/tool/config.sub
 	cp "$$(automake --print-libdir)/config.guess" ruby19/tool/config.guess
 	cd ruby19; ac_cv_func_setpgrp_void=yes \
-		$(CONFIGURE_ENV) ./configure $(CONFIGURE_ARGS) $(RUBY19_CONFIGURE_ARGS)
+		$(CONFIGURE_ENV) CFLAGS="$(CFLAGS) $(RUBY19_COMPAT_CFLAGS)" \
+		./configure $(CONFIGURE_ARGS) $(RUBY19_CONFIGURE_ARGS)
 
 ruby19/configure: ruby19/configure.in
 	cd ruby19; autoreconf -i
