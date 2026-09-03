@@ -27,6 +27,7 @@ import android.system.Os;
 import java.util.Locale;
 import java.io.File;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import org.libsdl.app.SDLActivity;
@@ -127,6 +128,34 @@ public class MainActivity extends SDLActivity
      * under mkxp-z's own name wins, and anything unrecognised is passed
      * through untouched so a user can still set any mkxp.json key by hand.
      */
+    /**
+     * The preload shims mkxp-z ships, on by default. RPG Maker games written
+     * for Windows call Win32API for fullscreen toggles, key state and window
+     * placement; on Android there is no user32 to dlopen, so without
+     * win32_wrap.rb the first such script kills the game with
+     * "library user32 not found" (MGQ Paradox's Fullscreen++ did exactly that).
+     * A game's own enginehost.json may name its own preloadScript list and
+     * then wins outright.
+     */
+    private static String withDefaultPreloads(String optionsJson, String bundleRoot)
+    {
+        if (bundleRoot == null) return optionsJson;
+        try {
+            JSONObject options = new JSONObject(optionsJson);
+            if (!options.has("preloadScript")) {
+                JSONArray preloads = new JSONArray();
+                for (String script : new String[] {"ruby_classic_wrap.rb", "mkxp_wrap.rb", "win32_wrap.rb"}) {
+                    preloads.put(new File(bundleRoot, "scripts/" + script).getAbsolutePath());
+                }
+                options.put("preloadScript", preloads);
+            }
+            return options.toString();
+        } catch (Exception error) {
+            Log.w(TAG, "Could not add default preload scripts: " + error);
+            return optionsJson;
+        }
+    }
+
     private static String withSharedOptionNames(String optionsJson)
     {
         try {
@@ -177,12 +206,12 @@ public class MainActivity extends SDLActivity
             }
         }
         String engineHostOptions = getIntent().getStringExtra("dev.enginehost.runtime.OPTIONS");
-        if (engineHostOptions != null) {
-            try {
-                Os.setenv("ENGINEHOST_OPTIONS", withSharedOptionNames(engineHostOptions), true);
-            } catch (ErrnoException error) {
-                throw new IllegalStateException("Unable to pass enginehost options", error);
-            }
+        String mergedOptions = withDefaultPreloads(
+            engineHostOptions == null ? "{}" : withSharedOptionNames(engineHostOptions), bundleRoot);
+        try {
+            Os.setenv("ENGINEHOST_OPTIONS", mergedOptions, true);
+        } catch (ErrnoException error) {
+            throw new IllegalStateException("Unable to pass enginehost options", error);
         }
         super.onCreate(savedInstanceState);
 

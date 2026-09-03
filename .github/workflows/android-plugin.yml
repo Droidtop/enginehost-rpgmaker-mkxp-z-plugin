@@ -140,6 +140,11 @@ jobs:
           test -f build/payload/runtime/ruby31/arm64-v8a/zlib.so
           test -z "$(find build/payload/runtime -type f -name '*-linux-android*.so' -print -quit)"
           test -f build/payload/runtime/ruby19/common/fileutils.rb
+          # mkxp-z's own preload shims: a cross-platform subset of Win32API
+          # (Fullscreen++ and friends call user32 directly), Ancurio-era names,
+          # and RPG Maker-era Ruby names. The activity preloads them by default.
+          mkdir -p build/payload/scripts
+          cp scripts/preload/win32_wrap.rb scripts/preload/mkxp_wrap.rb scripts/preload/ruby_classic_wrap.rb build/payload/scripts/
           cp enginehost/LICENSES.md build/payload/LICENSES.md
           cp COPYING build/payload/COPYING.mkxp-z
           cp THIRD_PARTY.md build/payload/THIRD_PARTY.md
@@ -183,6 +188,9 @@ jobs:
           REQUESTED_TAG: ${{ inputs.tag }}
         run: |
           set -euo pipefail
+          # No artifact at all (a branch whose build makes no bundle) means no
+          # release directory either; that is "nothing to publish", not an error.
+          mkdir -p release
           bundle="$(find release -name '*.enginehost.tar.xz' -print -quit)"
           if [ -z "$bundle" ]; then
             echo "This branch's build produced no signed bundle; nothing to publish."
@@ -247,6 +255,9 @@ jobs:
           REQUESTED_TAG: 
         run: |
           set -euo pipefail
+          # No artifact at all (a branch whose build makes no bundle) means no
+          # release directory either; that is "nothing to publish", not an error.
+          mkdir -p release
           bundle="$(find release -name '*.enginehost.tar.xz' -print -quit)"
           if [ -z "$bundle" ]; then
             echo "This branch's build produced no signed bundle; nothing to publish."
