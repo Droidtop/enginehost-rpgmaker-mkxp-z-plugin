@@ -115,8 +115,13 @@ jobs:
           }
           copy_ruby_runtime ruby19 1.9.1
           copy_ruby_runtime ruby31 3.1.0
-          test -n "$(find build/payload/runtime/ruby19/armeabi-v7a -type f -name '*.so' -print -quit)"
-          test -n "$(find build/payload/runtime/ruby31/arm64-v8a -type f -name '*.so' -print -quit)"
+          # Extensions must keep their own names: RGSS games require zlib
+          # by name, and a runtime whose every extension is called after
+          # the architecture is a bundle that only fails on the device.
+          test -f build/payload/runtime/ruby19/armeabi-v7a/zlib.so
+          test -f build/payload/runtime/ruby19/arm64-v8a/zlib.so
+          test -f build/payload/runtime/ruby31/arm64-v8a/zlib.so
+          test -z "$(find build/payload/runtime -type f -name '*-linux-android*.so' -print -quit)"
           test -f build/payload/runtime/ruby19/common/fileutils.rb
           cp enginehost/LICENSES.md build/payload/LICENSES.md
           cp COPYING build/payload/COPYING.mkxp-z
