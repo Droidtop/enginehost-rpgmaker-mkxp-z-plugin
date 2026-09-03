@@ -144,7 +144,7 @@ public class MainActivity extends SDLActivity
             JSONObject options = new JSONObject(optionsJson);
             if (!options.has("preloadScript")) {
                 JSONArray preloads = new JSONArray();
-                for (String script : new String[] {"ruby_classic_wrap.rb", "mkxp_wrap.rb", "win32_wrap.rb"}) {
+                for (String script : new String[] {"ruby_classic_wrap.rb", "mkxp_wrap.rb", "win32_wrap.rb", "enginehost_win32_extras.rb"}) {
                     preloads.put(new File(bundleRoot, "scripts/" + script).getAbsolutePath());
                 }
                 options.put("preloadScript", preloads);

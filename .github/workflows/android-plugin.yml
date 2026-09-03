@@ -144,7 +144,7 @@ jobs:
           # (Fullscreen++ and friends call user32 directly), Ancurio-era names,
           # and RPG Maker-era Ruby names. The activity preloads them by default.
           mkdir -p build/payload/scripts
-          cp scripts/preload/win32_wrap.rb scripts/preload/mkxp_wrap.rb scripts/preload/ruby_classic_wrap.rb build/payload/scripts/
+          cp scripts/preload/win32_wrap.rb scripts/preload/mkxp_wrap.rb scripts/preload/ruby_classic_wrap.rb scripts/preload/enginehost_win32_extras.rb build/payload/scripts/
           cp enginehost/LICENSES.md build/payload/LICENSES.md
           cp COPYING build/payload/COPYING.mkxp-z
           cp THIRD_PARTY.md build/payload/THIRD_PARTY.md
