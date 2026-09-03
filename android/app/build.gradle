@@ -6,6 +6,15 @@ android {
     namespace 'com.hatkid.mkxpz'
     compileSdk 33
 
+    androidResources {
+        // Enginehost attaches this APK's resources to the host's own
+        // Resources object. Both would be compiled at the default package
+        // id 0x7f and the host's table wins every lookup, so the host now
+        // refuses a bundle compiled there. Compile ours where the host
+        // will never be, as the Godot bundle does.
+        additionalParameters += ["--package-id", "0x80", "--allow-reserved-package-id"]
+    }
+
     defaultConfig {
         applicationId "dev.enginehost.plugin.rpgmaker.slot1"
         minSdk 21
