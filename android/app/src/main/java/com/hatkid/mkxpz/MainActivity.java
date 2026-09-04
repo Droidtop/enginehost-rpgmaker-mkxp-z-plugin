@@ -14,6 +14,8 @@ import android.widget.LinearLayout;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import org.libsdl.app.SDLControllerManager;
+import java.util.HashMap;
+import java.util.Map;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -79,6 +81,17 @@ public class MainActivity extends SDLActivity
     // The person hid the touch controls themselves; a stray touch must not bring them back.
     private boolean mGamepadUserHidden = false;
     private Button mToggleControls;
+
+    /**
+     * The person's controller map, from Enginehost's controller settings
+     * (resolved per engine, sent as CONTROLLER_BINDINGS). Pad key code ->
+     * action id, and stick axis -> action id. Nothing here decides which
+     * button does what; that is configured in Enginehost.
+     */
+    private final Map<Integer, String> mPadKeyActions = new HashMap<>();
+    private final Map<Integer, String> mPadAxisActions = new HashMap<>();
+    /** Axis actions currently held as a direction key, so a centred stick releases it. */
+    private final Map<String, Integer> mAxisHeldKeys = new HashMap<>();
 
     private void runSDLThread()
     {
@@ -217,6 +230,7 @@ public class MainActivity extends SDLActivity
                 throw new IllegalStateException("Unable to pass the game directory", error);
             }
         }
+        loadControllerBindings(getIntent().getStringExtra("dev.enginehost.runtime.CONTROLLER_BINDINGS"));
         String engineHostOptions = getIntent().getStringExtra("dev.enginehost.runtime.OPTIONS");
         String mergedOptions = withDefaultPreloads(
             engineHostOptions == null ? "{}" : withSharedOptionNames(engineHostOptions), bundleRoot);
@@ -346,6 +360,55 @@ public class MainActivity extends SDLActivity
         }
     }
 
+    private void loadControllerBindings(String json)
+    {
+        mPadKeyActions.clear();
+        mPadAxisActions.clear();
+        if (json == null) return;
+        try {
+            JSONObject map = new JSONObject(json);
+            java.util.Iterator<String> actions = map.keys();
+            while (actions.hasNext()) {
+                String action = actions.next();
+                JSONObject binding = map.getJSONObject(action);
+                if ("key".equals(binding.getString("type"))) {
+                    mPadKeyActions.put(binding.getInt("code"), action);
+                } else if ("axis".equals(binding.getString("type"))) {
+                    mPadAxisActions.put(binding.getInt("axis"), action);
+                }
+            }
+        } catch (Exception error) {
+            Log.w(TAG, "Ignoring an unreadable controller map: " + error);
+        }
+    }
+
+    /**
+     * What each Enginehost action means to an RGSS game, expressed as the
+     * keyboard key RPG Maker itself reads for it (the same keys the touch
+     * overlay sends). This table is the plugin's; which pad button triggers
+     * an action is the person's, in Enginehost's controller settings.
+     */
+    private static int keyForAction(String action)
+    {
+        switch (action) {
+            case "up": return KeyEvent.KEYCODE_DPAD_UP;
+            case "down": return KeyEvent.KEYCODE_DPAD_DOWN;
+            case "left": return KeyEvent.KEYCODE_DPAD_LEFT;
+            case "right": return KeyEvent.KEYCODE_DPAD_RIGHT;
+            case "confirm": return KeyEvent.KEYCODE_ENTER;      // RGSS C
+            case "cancel": return KeyEvent.KEYCODE_ESCAPE;      // RGSS B
+            case "menu": return KeyEvent.KEYCODE_ESCAPE;        // RGSS B opens the menu
+            case "auto": return KeyEvent.KEYCODE_SHIFT_LEFT;    // RGSS A: dash / auto-run
+            case "skip": return KeyEvent.KEYCODE_CTRL_LEFT;     // message skip in scripts that read Ctrl
+            case "page_previous": return KeyEvent.KEYCODE_Q;    // RGSS L
+            case "page_next": return KeyEvent.KEYCODE_W;        // RGSS R
+            case "history": return KeyEvent.KEYCODE_A;          // RGSS X
+            case "quick_save": return KeyEvent.KEYCODE_S;       // RGSS Y
+            case "quick_load": return KeyEvent.KEYCODE_D;       // RGSS Z
+            default: return KeyEvent.KEYCODE_UNKNOWN;
+        }
+    }
+
     private void updateControlsToggleLabel()
     {
         if (mToggleControls != null)
@@ -355,18 +418,26 @@ public class MainActivity extends SDLActivity
     @Override
     public boolean dispatchKeyEvent(KeyEvent evt)
     {
-        // A hardware pad belongs to SDL's game-controller path, where mkxp-z's
-        // own bindings apply (A confirm, B cancel, X/Y, shoulders). Feeding its
-        // buttons through the touch overlay's listener sent them as raw
-        // keyboard codes: the D-pad happened to double as arrows, A/B/X/Y
-        // meant nothing. Hide the overlay and hand the event to SDL.
+        // A hardware pad is translated through the person's Enginehost
+        // controller map: pad button -> action -> the keyboard key RGSS reads
+        // for that action. Feeding raw pad codes to SDL as keyboard keys made
+        // the D-pad work by accident (those codes double as arrows) and left
+        // A/B/X/Y meaning nothing.
         if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId())) {
             if (!mGamepadInvisible) {
                 mGamepad.hideView();
                 mGamepadInvisible = true;
                 updateControlsToggleLabel();
             }
-            return super.dispatchKeyEvent(evt);
+            String action = mPadKeyActions.get(evt.getKeyCode());
+            int key = action == null ? KeyEvent.KEYCODE_UNKNOWN : keyForAction(action);
+            if (key == KeyEvent.KEYCODE_UNKNOWN)
+                return true; // a pad button the person has not bound does nothing
+            if (evt.getAction() == KeyEvent.ACTION_DOWN && evt.getRepeatCount() == 0)
+                SDLActivity.onNativeKeyDown(key);
+            else if (evt.getAction() == KeyEvent.ACTION_UP)
+                SDLActivity.onNativeKeyUp(key);
+            return true;
         }
         if (
             evt.getKeyCode() != KeyEvent.KEYCODE_BACK &&
@@ -405,9 +476,34 @@ public class MainActivity extends SDLActivity
     @Override
     public boolean onGenericMotionEvent(MotionEvent evt)
     {
-        // Same rule for sticks and hats: a real pad is SDL's.
-        if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId()))
-            return super.onGenericMotionEvent(evt);
+        // Sticks go through the same map: an axis bound to a direction action
+        // presses that direction's key past the dead zone and releases it at
+        // centre. Hats arrive as D-pad key events and take the key path.
+        if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId())) {
+            for (Map.Entry<Integer, String> bound : mPadAxisActions.entrySet()) {
+                float value = evt.getAxisValue(bound.getKey());
+                String action = bound.getValue();
+                int negativeKey, positiveKey;
+                if (action.equals("left_x") || action.equals("right_x")) {
+                    negativeKey = KeyEvent.KEYCODE_DPAD_LEFT; positiveKey = KeyEvent.KEYCODE_DPAD_RIGHT;
+                } else if (action.equals("left_y") || action.equals("right_y")) {
+                    negativeKey = KeyEvent.KEYCODE_DPAD_UP; positiveKey = KeyEvent.KEYCODE_DPAD_DOWN;
+                } else {
+                    continue;
+                }
+                int wanted = value < -0.5f ? negativeKey : value > 0.5f ? positiveKey : KeyEvent.KEYCODE_UNKNOWN;
+                Integer held = mAxisHeldKeys.get(action);
+                if (held != null && held != wanted) {
+                    SDLActivity.onNativeKeyUp(held);
+                    mAxisHeldKeys.remove(action);
+                }
+                if (wanted != KeyEvent.KEYCODE_UNKNOWN && (held == null || held != wanted)) {
+                    SDLActivity.onNativeKeyDown(wanted);
+                    mAxisHeldKeys.put(action, wanted);
+                }
+            }
+            return true;
+        }
         if (mGamepad.processDPadEvent(evt))
             return true;
 
