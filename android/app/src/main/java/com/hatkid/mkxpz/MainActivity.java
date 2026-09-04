@@ -11,6 +11,9 @@ import android.view.MotionEvent;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.TextView;
 import android.widget.LinearLayout;
+import android.widget.Button;
+import android.widget.RelativeLayout;
+import org.libsdl.app.SDLControllerManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -73,6 +76,9 @@ public class MainActivity extends SDLActivity
     // In-screen gamepad
     private final Gamepad mGamepad = new Gamepad();
     private boolean mGamepadInvisible = false;
+    // The person hid the touch controls themselves; a stray touch must not bring them back.
+    private boolean mGamepadUserHidden = false;
+    private Button mToggleControls;
 
     private void runSDLThread()
     {
@@ -252,6 +258,7 @@ public class MainActivity extends SDLActivity
 
         if (mLayout != null) {
             mGamepad.attachTo(this, mLayout);
+            attachControlsToggle();
         }
 
         // Setup FPS textview
@@ -302,9 +309,65 @@ public class MainActivity extends SDLActivity
         System.exit(0);
     }
 
+    /**
+     * A small always-available switch for the touch controls. They also hide
+     * by themselves when a hardware pad or keyboard is used and come back on
+     * a touch, but a person playing with a pad on a touch screen needs a way
+     * to keep them gone; that is what "user hidden" protects.
+     */
+    private void attachControlsToggle()
+    {
+        mToggleControls = new Button(this);
+        mToggleControls.setAllCaps(false);
+        mToggleControls.setTextSize(11);
+        mToggleControls.setAlpha(0.55f);
+        mToggleControls.setPadding(24, 4, 24, 4);
+        mToggleControls.setOnClickListener(v -> {
+            if (mGamepadInvisible) {
+                mGamepadUserHidden = false;
+                mGamepad.showView();
+                mGamepadInvisible = false;
+            } else {
+                mGamepadUserHidden = true;
+                mGamepad.hideView();
+                mGamepadInvisible = true;
+            }
+            updateControlsToggleLabel();
+        });
+        updateControlsToggleLabel();
+        if (mLayout instanceof RelativeLayout) {
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            params.addRule(RelativeLayout.CENTER_HORIZONTAL);
+            params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+            mLayout.addView(mToggleControls, params);
+        } else {
+            mLayout.addView(mToggleControls, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        }
+    }
+
+    private void updateControlsToggleLabel()
+    {
+        if (mToggleControls != null)
+            mToggleControls.setText(mGamepadInvisible ? "Show controls" : "Hide controls");
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent evt)
     {
+        // A hardware pad belongs to SDL's game-controller path, where mkxp-z's
+        // own bindings apply (A confirm, B cancel, X/Y, shoulders). Feeding its
+        // buttons through the touch overlay's listener sent them as raw
+        // keyboard codes: the D-pad happened to double as arrows, A/B/X/Y
+        // meant nothing. Hide the overlay and hand the event to SDL.
+        if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId())) {
+            if (!mGamepadInvisible) {
+                mGamepad.hideView();
+                mGamepadInvisible = true;
+                updateControlsToggleLabel();
+            }
+            return super.dispatchKeyEvent(evt);
+        }
         if (
             evt.getKeyCode() != KeyEvent.KEYCODE_BACK &&
             evt.getKeyCode() != KeyEvent.KEYCODE_VOLUME_UP &&
@@ -316,6 +379,7 @@ public class MainActivity extends SDLActivity
             if (!mGamepadInvisible) {
                 mGamepad.hideView();
                 mGamepadInvisible = true;
+                updateControlsToggleLabel();
             }
         }
 
@@ -328,10 +392,11 @@ public class MainActivity extends SDLActivity
     @Override
     public boolean dispatchTouchEvent(MotionEvent evt)
     {
-        // Show gamepad view on touch when hidden
-        if (mGamepadInvisible) {
+        // Show gamepad view on touch when hidden, unless the person hid it.
+        if (mGamepadInvisible && !mGamepadUserHidden) {
             mGamepad.showView();
             mGamepadInvisible = false;
+            updateControlsToggleLabel();
         }
 
         return super.dispatchTouchEvent(evt);
@@ -340,6 +405,9 @@ public class MainActivity extends SDLActivity
     @Override
     public boolean onGenericMotionEvent(MotionEvent evt)
     {
+        // Same rule for sticks and hats: a real pad is SDL's.
+        if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId()))
+            return super.onGenericMotionEvent(evt);
         if (mGamepad.processDPadEvent(evt))
             return true;
 
