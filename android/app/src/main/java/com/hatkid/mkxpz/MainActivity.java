@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.hardware.input.InputManager;
+import android.view.InputDevice;
 import android.view.View;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -263,8 +265,11 @@ public class MainActivity extends SDLActivity
             e.printStackTrace();
         }
 
-        // Setup in-screen gamepad
-        mGamepadInvisible = (isAndroidTV() || isChromebook());
+        // Setup in-screen gamepad. A pad already connected when the game
+        // starts (the common case on a console like the Retroid, where the
+        // built-in pad is present from boot) hides the overlay from the
+        // first frame instead of waiting for a button press.
+        mGamepadInvisible = (isAndroidTV() || isChromebook() || hasConnectedGamepad());
         GamepadConfig gpadConfig = new GamepadConfig();
         mGamepad.init(gpadConfig, mGamepadInvisible);
         mGamepad.setOnKeyDownListener(SDLActivity::onNativeKeyDown);
@@ -274,6 +279,7 @@ public class MainActivity extends SDLActivity
             mGamepad.attachTo(this, mLayout);
             attachControlsToggle();
         }
+        registerGamepadHotplugListener();
 
         // Setup FPS textview
         tvFps = new TextView(this);
@@ -315,12 +321,82 @@ public class MainActivity extends SDLActivity
     @Override
     protected void onDestroy()
     {
+        unregisterGamepadHotplugListener();
         super.onDestroy();
 
         // HACK: Exiting the JVM (process) since Ruby does not likes when we
         // trying to re-initialize Ruby VM in mkxp-z (JNI native library)
         // that leads to segmentation fault, even we have cleanup the Ruby VM.
         System.exit(0);
+    }
+
+    /** True if any currently connected input device looks like a gamepad. */
+    private static boolean isGamepadDevice(InputDevice device)
+    {
+        if (device == null || device.isVirtual()) return false;
+        int sources = device.getSources();
+        return (sources & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+            || (sources & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK;
+    }
+
+    private static boolean hasConnectedGamepad()
+    {
+        for (int id : InputDevice.getDeviceIds()) {
+            if (isGamepadDevice(InputDevice.getDevice(id))) return true;
+        }
+        return false;
+    }
+
+    private InputManager.InputDeviceListener mGamepadHotplugListener;
+
+    /**
+     * The touch overlay's own listener (dispatchKeyEvent/onGenericMotionEvent)
+     * only reacts once a pad is actually pressed. A pad attached before the
+     * game starts, or plugged in while the person never touches it, left the
+     * overlay drawn over a console with a real pad already in hand. Watch
+     * device add/remove directly so presence alone is enough.
+     */
+    private void registerGamepadHotplugListener()
+    {
+        InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
+        if (inputManager == null) return;
+        mGamepadHotplugListener = new InputManager.InputDeviceListener() {
+            @Override
+            public void onInputDeviceAdded(int deviceId)
+            {
+                if (isGamepadDevice(InputDevice.getDevice(deviceId)) && !mGamepadInvisible) {
+                    mGamepad.hideView();
+                    mGamepadInvisible = true;
+                    updateControlsToggleLabel();
+                }
+            }
+
+            @Override
+            public void onInputDeviceRemoved(int deviceId)
+            {
+                // Bring the overlay back once no gamepad remains, unless the
+                // person hid it themselves; the device that just vanished is
+                // already gone from getDeviceIds() by this callback.
+                if (!mGamepadUserHidden && mGamepadInvisible && !hasConnectedGamepad()
+                        && !isAndroidTV() && !isChromebook()) {
+                    mGamepad.showView();
+                    mGamepadInvisible = false;
+                    updateControlsToggleLabel();
+                }
+            }
+
+            @Override
+            public void onInputDeviceChanged(int deviceId) { }
+        };
+        inputManager.registerInputDeviceListener(mGamepadHotplugListener, mMainHandler);
+    }
+
+    private void unregisterGamepadHotplugListener()
+    {
+        if (mGamepadHotplugListener == null) return;
+        InputManager inputManager = (InputManager) getSystemService(Context.INPUT_SERVICE);
+        if (inputManager != null) inputManager.unregisterInputDeviceListener(mGamepadHotplugListener);
+        mGamepadHotplugListener = null;
     }
 
     /**
