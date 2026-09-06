@@ -341,10 +341,16 @@ public class MainActivity extends SDLActivity
 
     private static boolean hasConnectedGamepad()
     {
+        boolean found = false;
         for (int id : InputDevice.getDeviceIds()) {
-            if (isGamepadDevice(InputDevice.getDevice(id))) return true;
+            InputDevice device = InputDevice.getDevice(id);
+            if (isGamepadDevice(device)) {
+                Log.i(TAG, "Gamepad present: " + device.getName() + " (id " + id + ")");
+                found = true;
+            }
         }
-        return false;
+        if (!found) Log.i(TAG, "No gamepad connected");
+        return found;
     }
 
     private InputManager.InputDeviceListener mGamepadHotplugListener;
@@ -456,6 +462,8 @@ public class MainActivity extends SDLActivity
         } catch (Exception error) {
             Log.w(TAG, "Ignoring an unreadable controller map: " + error);
         }
+        Log.i(TAG, "Controller map: " + mPadKeyActions.size() + " buttons, "
+            + mPadAxisActions.size() + " axes");
     }
 
     /**
@@ -507,6 +515,14 @@ public class MainActivity extends SDLActivity
             }
             String action = mPadKeyActions.get(evt.getKeyCode());
             int key = action == null ? KeyEvent.KEYCODE_UNKNOWN : keyForAction(action);
+            if (evt.getAction() == KeyEvent.ACTION_DOWN && evt.getRepeatCount() == 0) {
+                // The one line that says a real pad reached the engine: which
+                // button arrived, what Enginehost calls it, and the RGSS key it
+                // became. Without it a dead pad and an unbound pad look alike.
+                Log.i(TAG, "Pad key " + KeyEvent.keyCodeToString(evt.getKeyCode())
+                    + " -> action " + (action == null ? "(unbound)" : action)
+                    + " -> RGSS key " + KeyEvent.keyCodeToString(key));
+            }
             if (key == KeyEvent.KEYCODE_UNKNOWN)
                 return true; // a pad button the person has not bound does nothing
             if (evt.getAction() == KeyEvent.ACTION_DOWN && evt.getRepeatCount() == 0)
