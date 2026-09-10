@@ -70,16 +70,19 @@ VALUE formResponse(mkxp_net::HTTPResponse &res) {
     return ret;
 }
 
-#if RAPI_MAJOR >= 2
+/* The *Internal workers and their argument structs are plain C++ over
+ * mkxp_net; nothing in them is Ruby-version specific. Only the GVL-dropping
+ * call is, so keep them unconditional and guard the call sites alone.
+ * (Guarding the definitions left the RAPI_MAJOR < 2 branches referring to
+ * symbols that were never declared.) */
 void* httpGetInternal(void *req) {
     VALUE ret;
-    
+
     mkxp_net::HTTPResponse res = ((mkxp_net::HTTPRequest*)req)->get();
     ret = formResponse(res);
-    
+
     return (void*)ret;
 }
-#endif
 
 RB_METHOD_GUARD(httpGet) {
     RB_UNUSED_PARAM;
@@ -103,8 +106,6 @@ RB_METHOD_GUARD(httpGet) {
 }
 RB_METHOD_GUARD_END
 
-#if RAPI_MAJOR >= 2
-
 typedef struct {
     mkxp_net::HTTPRequest *req;
     mkxp_net::StringMap *postData;
@@ -121,7 +122,6 @@ void* httpPostInternal(void *args) {
     
     return (void*)ret;
 }
-#endif
 
 RB_METHOD_GUARD(httpPost) {
     RB_UNUSED_PARAM;
@@ -143,12 +143,11 @@ RB_METHOD_GUARD(httpPost) {
 #if RAPI_MAJOR >= 2
     return (VALUE)drop_gvl_guard(httpPostInternal, &args, 0, 0);
 #else
-    return httpPostInternal(&args);
+    return (VALUE)httpPostInternal(&args);
 #endif
 }
 RB_METHOD_GUARD_END
 
-#if RAPI_MAJOR >= 2
 typedef struct {
     mkxp_net::HTTPRequest *req;
     const char *body;
@@ -167,7 +166,6 @@ void* httpPostBodyInternal(void *args) {
     
     return (void*)ret;
 }
-#endif
 
 RB_METHOD_GUARD(httpPostBody) {
     RB_UNUSED_PARAM;
@@ -189,7 +187,7 @@ RB_METHOD_GUARD(httpPostBody) {
 #if RAPI_MAJOR >= 2
     return (VALUE)drop_gvl_guard(httpPostBodyInternal, &args, 0, 0);
 #else
-    return httpPostBodyInternal(&args);
+    return (VALUE)httpPostBodyInternal(&args);
 #endif
 }
 RB_METHOD_GUARD_END

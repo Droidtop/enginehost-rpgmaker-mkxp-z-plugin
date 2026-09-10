@@ -238,6 +238,20 @@ try { exp } catch (...) {}
     json::value baseConf = readConfFile(CONF_FILE);
     copyObject(optsJ, baseConf);
     copyObject(opts["bindingNames"], baseConf.as_object()["bindingNames"], "bindingNames .");
+
+    // enginehost has already merged the caller and game-folder configuration,
+    // keeping the game-folder values authoritative. Apply its engine-specific
+    // options in memory so launching never rewrites the game or user config.
+    const char *engineHostOptions = SDL_getenv("ENGINEHOST_OPTIONS");
+    if (engineHostOptions && *engineHostOptions) {
+        try {
+            json::value hostConf = json::parse5(engineHostOptions);
+            copyObject(optsJ, hostConf);
+            copyObject(opts["bindingNames"], hostConf.as_object()["bindingNames"], "bindingNames .");
+        } catch (...) {
+            Debug() << "Invalid enginehost RPG Maker options JSON";
+        }
+    }
     
 #define SET_OPT_CUSTOMKEY(var, key, type) GUARD(var = opts[#key].as_##type();)
 #define SET_OPT(var, type) SET_OPT_CUSTOMKEY(var, var, type)

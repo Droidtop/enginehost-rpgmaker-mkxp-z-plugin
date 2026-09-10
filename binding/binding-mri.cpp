@@ -1263,6 +1263,24 @@ static void mriBindingExecute() {
     
     VALUE lpaths = rb_gv_get(":");
     rb_ary_clear(lpaths);
+
+    /* The reset above leaves $: with only what the config names. Under
+     * enginehost the bundled Ruby's standard library and native extensions
+     * live inside the bundle, and the host tells Ruby where the way Ruby is
+     * always told: RUBYLIB. Keep those entries, or every `require` of a
+     * stdlib file fails with "no such file to load" even though the file is
+     * right there. */
+    if (const char *rubylib = SDL_getenv("RUBYLIB")) {
+        std::string entries(rubylib);
+        size_t start = 0;
+        while (start <= entries.size()) {
+            size_t end = entries.find(':', start);
+            if (end == std::string::npos) end = entries.size();
+            if (end > start)
+                rb_ary_push(lpaths, rb_str_new(entries.c_str() + start, end - start));
+            start = end + 1;
+        }
+    }
     
 #if defined(MKXPZ_BUILD_XCODE) && RAPI_MAJOR >= 2
     std::string resPath = mkxp_fs::getResourcePath();

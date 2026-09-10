@@ -31,7 +31,11 @@
 
 #include "exception.h"
 
-#ifdef RUBY_API_VERSION_MAJOR
+#ifdef MKXPZ_RUBY_API_VERSION_MAJOR
+#define RAPI_MAJOR MKXPZ_RUBY_API_VERSION_MAJOR
+#define RAPI_MINOR MKXPZ_RUBY_API_VERSION_MINOR
+#define RAPI_TEENY MKXPZ_RUBY_API_VERSION_TEENY
+#elif defined(RUBY_API_VERSION_MAJOR)
 #define RAPI_MAJOR RUBY_API_VERSION_MAJOR
 #define RAPI_MINOR RUBY_API_VERSION_MINOR
 #define RAPI_TEENY RUBY_API_VERSION_TEENY
@@ -95,7 +99,14 @@ void *drop_gvl_guard(void *(*func)(void *), void *args,
 #endif
 
 #if RAPI_MAJOR > 1 || RAPI_MINOR <= 9
-#if RAPI_FULL < 270
+/* Ruby <= 1.9.2 has a FLAT rb_data_type_t: the dmark/dfree/dsize pointers
+ * are direct members, there is no nested `function` group, no `parent`,
+ * and `reserved` holds three entries. The nested layout below arrives in
+ * 1.9.3. Verified against ruby-1.9.2-p320 and ruby-1.9.3-p551 headers. */
+#if RAPI_FULL < 193
+#define DEF_TYPE_CUSTOMNAME_AND_FREE(Klass, Name, Free)                        \
+rb_data_type_t Klass##Type = {Name, 0, Free, 0, {0, 0, 0}, 0}
+#elif RAPI_FULL < 270
 #define DEF_TYPE_CUSTOMNAME_AND_FREE(Klass, Name, Free)                        \
 rb_data_type_t Klass##Type = {                                               \
 Name, {0, Free, 0, {0, 0}}, 0, 0, DEF_TYPE_FLAGS}
@@ -182,6 +193,9 @@ return Data_Wrap_Struct(klass, 0, free, 0);                                \
 #if RAPI_FULL < 220
 #define rb_utf8_str_new_cstr rb_str_new2
 #define rb_utf8_str_new rb_str_new
+/* The RB_-prefixed spelling arrives with Ruby 2.2's macro cleanup; the
+ * unprefixed INT2FIX exists in every version including modern Ruby. */
+#define RB_INT2FIX(i) INT2FIX(i)
 #endif
 
 // end
@@ -286,8 +300,14 @@ static inline void setPrivateData(VALUE self, void *p) {
         /* RUBY_TYPED_NEVER_FREE == 0, and we don't use
          * RUBY_TYPED_DEFAULT_FREE for our stuff, so just
          * checking if it's truthy should be fine */
+        /* Flat before 1.9.3 -- see the DEF_TYPE comment above. */
+#if RAPI_FULL < 193
+        if (RTYPEDDATA_TYPE(self)->dfree)
+            (*RTYPEDDATA_TYPE(self)->dfree)(RTYPEDDATA_DATA(self));
+#else
         if (RTYPEDDATA_TYPE(self)->function.dfree)
             (*RTYPEDDATA_TYPE(self)->function.dfree)(RTYPEDDATA_DATA(self));
+#endif
     }
     RTYPEDDATA_DATA(self) = p;
 #else

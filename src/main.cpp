@@ -341,6 +341,14 @@ int main(int argc, char *argv[]) {
       winFlags |= SDL_WINDOW_RESIZABLE;
     if (conf.fullscreen)
       winFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+#ifdef __ANDROID__
+    /* On Android the window is the surface; a window asked for at the
+     * game's own resolution keeps that logical size and the frame lands
+     * unscaled in a corner of the screen. Fullscreen makes SDL size the
+     * window to the surface, after which the renderer letterboxes the game
+     * into it (fixedAspectRatio). JoiPlay's mkxp fork does the same. */
+    winFlags |= SDL_WINDOW_FULLSCREEN;
+#endif
     
 #ifdef GLES2_HEADER
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
@@ -355,6 +363,14 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
     
+#ifdef __ANDROID__
+    /* SDL decides the Android orientation from the window it is asked for:
+     * a resizable window with no hint means "follow the sensor", and a
+     * handheld lying on a desk reports portrait, so RPG Maker's 640x480
+     * frame ended up unscaled in a corner of a portrait surface. Every RGSS
+     * game is a landscape game; say so before the window exists. */
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
     win = SDL_CreateWindow(conf.windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED,
                            SDL_WINDOWPOS_UNDEFINED, conf.defScreenW,
                            conf.defScreenH, winFlags);

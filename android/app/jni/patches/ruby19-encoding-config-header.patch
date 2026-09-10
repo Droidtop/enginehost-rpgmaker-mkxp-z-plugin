@@ -1,0 +1,13 @@
+diff --git a/common.mk b/common.mk
+index 2a2ba42..a57b980 100644
+--- a/common.mk
++++ b/common.mk
+@@ -452,5 +452,9 @@ encs: enc trans
+ encs enc trans: $(ENC_MK) $(LIBRUBY) $(PREP)
++	# Ruby 1.9 relocates config.h into arch_hdrdir during the main build, but
++	# the recursively generated enc.mk does not inherit the parent VPATH.
++	# Stage the generated header where enc.mk's direct dependency expects it.
++	cp "$(arch_hdrdir)/ruby/config.h" config.h
+ 	$(MAKE) -f $(ENC_MK) RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(MFLAGS) $@
+ 
+ enc: {$(VPATH)}encdb.h
