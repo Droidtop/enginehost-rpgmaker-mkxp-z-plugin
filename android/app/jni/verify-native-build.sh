@@ -52,9 +52,13 @@ check_flat_soname() {
 check_flat_soname "$root/ruby19/lib/libruby19.so" libruby19.so
 check_flat_soname "$root/lib/libruby31.so" libruby31.so
 
-grep -Eq '^CC = .*/bin/(armv7a-linux-androideabi|aarch64-linux-android)[0-9]+-clang$' ruby19/Makefile \
+# What these two check is "did configure pick the NDK's cross compiler rather
+# than the host's", which is a property of the triple's shape, not of which ABI
+# is being built: enumerating triples here meant every new ABI failed on its own
+# correct compiler.
+grep -Eq '^CC = .*/bin/[A-Za-z0-9_]+-linux-android(eabi)?[0-9]+-clang$' ruby19/Makefile \
   || fail "ruby19/Makefile CC is not the NDK cross compiler"
-grep -Eq '^arch = (armv7a-linux-androideabi|aarch64-linux-android)$' ruby19/Makefile \
+grep -Eq '^arch = [A-Za-z0-9_]+-linux-android(eabi)?$' ruby19/Makefile \
   || fail "ruby19/Makefile arch is not an Android triple"
 echo "native preflight passed for $abi"
 
