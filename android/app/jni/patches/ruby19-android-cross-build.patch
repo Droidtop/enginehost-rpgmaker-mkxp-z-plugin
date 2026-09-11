@@ -34,7 +34,7 @@ index 75af2ec..8553b09 100755
 @@ -10,1 +10,7 @@
  require 'erb'
 +target_cc = CONFIG["CC"].to_s
-+unless target_cc =~ %r{/(?:armv7a-linux-androideabi|aarch64-linux-android)[0-9]+-clang\z}
++unless target_cc =~ %r{/[A-Za-z0-9_]+-linux-android(?:eabi)?[0-9]+-clang\z}
 +  abort "refusing to generate Android encodings with non-target compiler: " +
 +        target_cc
 +end
