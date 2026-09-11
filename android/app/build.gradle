@@ -41,8 +41,11 @@ android {
         abi {
             enable true
             reset()
-            // You can build also 'x86' and 'x86_64' if you want (useful for AVD debugging)
-            include 'armeabi-v7a', 'arm64-v8a'
+            // An enginehost bundle carries every ABI it supports in one
+            // archive and the host picks lib/<abi> from Build.SUPPORTED_ABIS,
+            // so x86_64 is not an AVD convenience here: it is half of what
+            // ships. Only 32-bit x86 is left out, having no device behind it.
+            include 'armeabi-v7a', 'arm64-v8a', 'x86_64'
             universalApk true
         }
     }

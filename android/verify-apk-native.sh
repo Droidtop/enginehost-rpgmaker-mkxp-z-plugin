@@ -27,7 +27,7 @@ unzip -q "$apk" 'lib/*' -d "$tmp"
 echo "native libraries in $(basename "$apk"):"
 (cd "$tmp" && find lib -type f | sort)
 
-for spec in 'armeabi-v7a:ARM:ELF32' 'arm64-v8a:AArch64:ELF64'; do
+for spec in 'armeabi-v7a:ARM:ELF32' 'arm64-v8a:AArch64:ELF64' 'x86_64:Advanced Micro Devices X86-64:ELF64'; do
   IFS=: read -r abi machine elf_class <<<"$spec"
   for name in libruby19.so libruby31.so libmkxp-z-ruby19.so libmkxp-z-ruby31.so; do
     library="$tmp/lib/$abi/$name"

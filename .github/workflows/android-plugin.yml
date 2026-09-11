@@ -61,6 +61,9 @@ jobs:
           make clean-iconv clean-openssl clean-ruby ARCH=linux-x86_64 ABI=arm64-v8a HOST=aarch64-linux-android TARGET=aarch64-linux-android
           make all ARCH=linux-x86_64 ABI=arm64-v8a HOST=aarch64-linux-android TARGET=aarch64-linux-android
           bash ./verify-native-build.sh arm64-v8a
+          make clean-iconv clean-openssl clean-ruby ARCH=linux-x86_64 ABI=x86_64 HOST=x86_64-linux-android TARGET=x86_64-linux-android
+          make all ARCH=linux-x86_64 ABI=x86_64 HOST=x86_64-linux-android TARGET=x86_64-linux-android
+          bash ./verify-native-build.sh x86_64
       - name: Generate embedded mkxp-z assets and shaders
         working-directory: android/app/jni
         run: bash ./generate_xxd.sh
@@ -114,7 +117,7 @@ jobs:
           copy_ruby_runtime() {
             runtime=$1
             version=$2
-            for abi in armeabi-v7a arm64-v8a; do
+            for abi in armeabi-v7a arm64-v8a x86_64; do
               source="android/app/jni/build-$abi/${runtime:+$runtime/}lib/ruby/$version"
               if [ "$runtime" = ruby31 ]; then
                 source="android/app/jni/build-$abi/lib/ruby/$version"
@@ -138,6 +141,8 @@ jobs:
           test -f build/payload/runtime/ruby19/armeabi-v7a/zlib.so
           test -f build/payload/runtime/ruby19/arm64-v8a/zlib.so
           test -f build/payload/runtime/ruby31/arm64-v8a/zlib.so
+          test -f build/payload/runtime/ruby19/x86_64/zlib.so
+          test -f build/payload/runtime/ruby31/x86_64/zlib.so
           test -z "$(find build/payload/runtime -type f -name '*-linux-android*.so' -print -quit)"
           test -f build/payload/runtime/ruby19/common/fileutils.rb
           # mkxp-z's own preload shims: a cross-platform subset of Win32API

@@ -5,6 +5,7 @@ abi=${1:?usage: verify-native-build.sh ABI}
 case "$abi" in
   armeabi-v7a) expected_machine='ARM'; expected_class='ELF32' ;;
   arm64-v8a) expected_machine='AArch64'; expected_class='ELF64' ;;
+  x86_64) expected_machine='Advanced Micro Devices X86-64'; expected_class='ELF64' ;;
   *) echo "unsupported ABI: $abi" >&2; exit 2 ;;
 esac
 
