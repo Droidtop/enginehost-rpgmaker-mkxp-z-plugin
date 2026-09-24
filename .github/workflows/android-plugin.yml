@@ -95,6 +95,11 @@ jobs:
           cp "$apk" build/payload/runtime.apk
           unzip -q "$apk" 'classes*.dex' 'lib/*' -d build/payload
           test -f build/payload/classes.dex
+          # Every plugin bundle ships arm64-v8a and x86_64, with the same
+          # libraries in each; a payload short of either is a failed build.
+          test -f build/payload/lib/arm64-v8a/libSDL2.so
+          test -f build/payload/lib/x86_64/libSDL2.so
+          test "$(ls build/payload/lib/arm64-v8a)" = "$(ls build/payload/lib/x86_64)"
           # Multidex is expected: two Ruby runtimes plus mkxp-z do not fit
           # in one dex. Record what is actually there, in load order, so
           # the bundle declares every dex rather than the first one.

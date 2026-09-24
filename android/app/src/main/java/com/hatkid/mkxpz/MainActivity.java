@@ -16,8 +16,12 @@ import android.widget.LinearLayout;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import org.libsdl.app.SDLControllerManager;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -85,15 +89,35 @@ public class MainActivity extends SDLActivity
     private Button mToggleControls;
 
     /**
-     * The person's controller map, from Enginehost's controller settings
-     * (resolved per engine, sent as CONTROLLER_BINDINGS). Pad key code ->
-     * action id, and stick axis -> action id. Nothing here decides which
-     * button does what; that is configured in Enginehost.
+     * One row of the person's controller map, from Enginehost's controller
+     * settings (resolved per engine, sent as CONTROLLER_BINDINGS): an RGSS
+     * action and the pad control it is bound to, a key or one half or the
+     * whole of an axis. An action bound to nothing has no row. Nothing here
+     * decides which control does what; that is configured in Enginehost.
      */
-    private final Map<Integer, String> mPadKeyActions = new HashMap<>();
-    private final Map<Integer, String> mPadAxisActions = new HashMap<>();
-    /** Axis actions currently held as a direction key, so a centred stick releases it. */
-    private final Map<String, Integer> mAxisHeldKeys = new HashMap<>();
+    private static final class PadBinding
+    {
+        final String action;
+        final boolean key;
+        final int code;      // key code, or axis
+        final int direction; // for an axis: -1 or 1 for one half, 0 for all of it
+
+        PadBinding(String action, boolean key, int code, int direction)
+        {
+            this.action = action;
+            this.key = key;
+            this.code = code;
+            this.direction = direction;
+        }
+    }
+
+    private final List<PadBinding> mPadBindings = new ArrayList<>();
+    /** The RGSS key each action is holding down now, if any. */
+    private final Map<String, Integer> mActionKeys = new HashMap<>();
+    /** The actions holding each RGSS key down: the key is up again when the last lets go. */
+    private final Map<Integer, Set<String>> mKeyHolders = new HashMap<>();
+    /** Where the pad's hat rests now, so only a change becomes a d-pad press or release. */
+    private int mHatX, mHatY;
 
     private void runSDLThread()
     {
@@ -444,8 +468,7 @@ public class MainActivity extends SDLActivity
 
     private void loadControllerBindings(String json)
     {
-        mPadKeyActions.clear();
-        mPadAxisActions.clear();
+        mPadBindings.clear();
         if (json == null) return;
         try {
             JSONObject map = new JSONObject(json);
@@ -453,43 +476,144 @@ public class MainActivity extends SDLActivity
             while (actions.hasNext()) {
                 String action = actions.next();
                 JSONObject binding = map.getJSONObject(action);
-                if ("key".equals(binding.getString("type"))) {
-                    mPadKeyActions.put(binding.getInt("code"), action);
-                } else if ("axis".equals(binding.getString("type"))) {
-                    mPadAxisActions.put(binding.getInt("axis"), action);
+                String type = binding.getString("type");
+                if ("key".equals(type)) {
+                    mPadBindings.add(new PadBinding(action, true, binding.getInt("code"), 0));
+                } else if ("axis".equals(type)) {
+                    mPadBindings.add(new PadBinding(action, false, binding.getInt("axis"),
+                        binding.optInt("direction", 0)));
                 }
+                // "none": the person unbound it, so nothing on the pad reaches it.
             }
         } catch (Exception error) {
             Log.w(TAG, "Ignoring an unreadable controller map: " + error);
         }
-        Log.i(TAG, "Controller map: " + mPadKeyActions.size() + " buttons, "
-            + mPadAxisActions.size() + " axes");
+        int keys = 0;
+        for (PadBinding binding : mPadBindings) if (binding.key) keys++;
+        Log.i(TAG, "Controller map: " + keys + " buttons, " + (mPadBindings.size() - keys) + " axes");
     }
 
     /**
-     * What each Enginehost action means to an RGSS game, expressed as the
-     * keyboard key RPG Maker itself reads for it (the same keys the touch
-     * overlay sends). This table is the plugin's; which pad button triggers
-     * an action is the person's, in Enginehost's controller settings.
+     * What each of Enginehost's RGSS actions is, as the keyboard key mkxp-z
+     * reads for that RGSS input. The action ids are RGSS's own `Input`
+     * symbols (src/input/input.h), as Enginehost's controller settings name
+     * them; the keys are mkxp-z's own keyboard defaults for those symbols:
+     * defaultKbBindings in src/input/keybindings.cpp for the rebindable
+     * inputs, and staticKbBindings in src/input/input.cpp for Shift, Ctrl,
+     * Alt and F5 to F9, which RGSS reads off fixed keys. These keys are the
+     * ones common to RGSS1, 2 and 3, so the table holds for XP, VX and VX Ace.
      */
     private static int keyForAction(String action)
     {
         switch (action) {
-            case "up": return KeyEvent.KEYCODE_DPAD_UP;
-            case "down": return KeyEvent.KEYCODE_DPAD_DOWN;
-            case "left": return KeyEvent.KEYCODE_DPAD_LEFT;
-            case "right": return KeyEvent.KEYCODE_DPAD_RIGHT;
-            case "confirm": return KeyEvent.KEYCODE_ENTER;      // RGSS C
-            case "cancel": return KeyEvent.KEYCODE_ESCAPE;      // RGSS B
-            case "menu": return KeyEvent.KEYCODE_ESCAPE;        // RGSS B opens the menu
-            case "auto": return KeyEvent.KEYCODE_SHIFT_LEFT;    // RGSS A: dash / auto-run
-            case "skip": return KeyEvent.KEYCODE_CTRL_LEFT;     // message skip in scripts that read Ctrl
-            case "page_previous": return KeyEvent.KEYCODE_Q;    // RGSS L
-            case "page_next": return KeyEvent.KEYCODE_W;        // RGSS R
-            case "history": return KeyEvent.KEYCODE_A;          // RGSS X
-            case "quick_save": return KeyEvent.KEYCODE_S;       // RGSS Y
-            case "quick_load": return KeyEvent.KEYCODE_D;       // RGSS Z
+            case "rgss_up": return KeyEvent.KEYCODE_DPAD_UP;
+            case "rgss_down": return KeyEvent.KEYCODE_DPAD_DOWN;
+            case "rgss_left": return KeyEvent.KEYCODE_DPAD_LEFT;
+            case "rgss_right": return KeyEvent.KEYCODE_DPAD_RIGHT;
+            case "rgss_c": return KeyEvent.KEYCODE_ENTER;         // Return -> C
+            case "rgss_b": return KeyEvent.KEYCODE_ESCAPE;        // Escape -> B
+            case "rgss_b_second": return KeyEvent.KEYCODE_NUMPAD_0; // KP 0 -> B, RGSS's second B key
+            case "rgss_a": return KeyEvent.KEYCODE_SHIFT_LEFT;    // LShift -> A
+            case "rgss_x": return KeyEvent.KEYCODE_A;             // A -> X
+            case "rgss_y": return KeyEvent.KEYCODE_S;             // S -> Y
+            case "rgss_z": return KeyEvent.KEYCODE_D;             // D -> Z
+            case "rgss_l": return KeyEvent.KEYCODE_Q;             // Q -> L
+            case "rgss_r": return KeyEvent.KEYCODE_W;             // W -> R
+            // RShift reaches Shift alone; LShift is A as well, as on a keyboard.
+            case "rgss_shift": return KeyEvent.KEYCODE_SHIFT_RIGHT;
+            case "rgss_ctrl": return KeyEvent.KEYCODE_CTRL_LEFT;
+            case "rgss_alt": return KeyEvent.KEYCODE_ALT_LEFT;
+            case "rgss_f5": return KeyEvent.KEYCODE_F5;
+            case "rgss_f6": return KeyEvent.KEYCODE_F6;
+            case "rgss_f7": return KeyEvent.KEYCODE_F7;
+            case "rgss_f8": return KeyEvent.KEYCODE_F8;
+            case "rgss_f9": return KeyEvent.KEYCODE_F9;
             default: return KeyEvent.KEYCODE_UNKNOWN;
+        }
+    }
+
+    /**
+     * A stick action's two directions, negative half first; null for an
+     * action that is not a stick. RGSS has no analogue input: a stick is
+     * its four directions, as mkxp-z's own pad table makes the left stick
+     * past half travel (addAxisBinding in src/input/keybindings.cpp).
+     */
+    private static int[] directionsForStick(String action)
+    {
+        switch (action) {
+            case "left_x": case "right_x":
+                return new int[] { KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT };
+            case "left_y": case "right_y":
+                return new int[] { KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN };
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * An action's value now, as Enginehost itself measures it: 1 or 0 for a
+     * key, the signed axis for a whole axis, and 0 to 1 for one half.
+     */
+    private static float bindingValue(PadBinding binding, float raw)
+    {
+        if (binding.direction < 0) return Math.max(-raw, 0f);
+        if (binding.direction > 0) return Math.max(raw, 0f);
+        return raw;
+    }
+
+    /** Holds down the RGSS key [action] means at [value], releasing what it held before. */
+    private void applyAction(String action, float value)
+    {
+        int wanted;
+        int[] directions = directionsForStick(action);
+        if (directions != null) {
+            wanted = value < -0.5f ? directions[0] : value > 0.5f ? directions[1] : KeyEvent.KEYCODE_UNKNOWN;
+        } else {
+            wanted = value > 0.5f ? keyForAction(action) : KeyEvent.KEYCODE_UNKNOWN;
+        }
+        Integer held = mActionKeys.get(action);
+        if (held != null && held == wanted) return;
+        if (held != null) {
+            mActionKeys.remove(action);
+            Set<String> holders = mKeyHolders.get(held);
+            if (holders != null && holders.remove(action) && holders.isEmpty())
+                SDLActivity.onNativeKeyUp(held);
+        }
+        if (wanted == KeyEvent.KEYCODE_UNKNOWN) return;
+        mActionKeys.put(action, wanted);
+        Set<String> holders = mKeyHolders.get(wanted);
+        if (holders == null) mKeyHolders.put(wanted, holders = new HashSet<>());
+        if (holders.isEmpty()) SDLActivity.onNativeKeyDown(wanted);
+        holders.add(action);
+    }
+
+    /** A pad button, down or up, through every action bound to it. */
+    private void applyPadKey(int keyCode, boolean down)
+    {
+        for (PadBinding binding : mPadBindings)
+            if (binding.key && binding.code == keyCode) applyAction(binding.action, down ? 1f : 0f);
+    }
+
+    /**
+     * The hat moved. Android turns a hat nobody consumed into d-pad key
+     * events; this activity consumes the pad's motion so that SDL's own
+     * joystick path does not drive RGSS behind the map's back, so it does
+     * the same turning itself. A pad that also sends d-pad keys for its hat
+     * presses the same actions twice over, and a held key is not pressed again.
+     */
+    private void applyHat(MotionEvent evt)
+    {
+        int x = Math.round(evt.getAxisValue(MotionEvent.AXIS_HAT_X));
+        int y = Math.round(evt.getAxisValue(MotionEvent.AXIS_HAT_Y));
+        if (x != mHatX) {
+            if (mHatX != 0) applyPadKey(mHatX < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT, false);
+            if (x != 0) applyPadKey(x < 0 ? KeyEvent.KEYCODE_DPAD_LEFT : KeyEvent.KEYCODE_DPAD_RIGHT, true);
+            mHatX = x;
+        }
+        if (y != mHatY) {
+            if (mHatY != 0) applyPadKey(mHatY < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN, false);
+            if (y != 0) applyPadKey(y < 0 ? KeyEvent.KEYCODE_DPAD_UP : KeyEvent.KEYCODE_DPAD_DOWN, true);
+            mHatY = y;
         }
     }
 
@@ -513,22 +637,26 @@ public class MainActivity extends SDLActivity
                 mGamepadInvisible = true;
                 updateControlsToggleLabel();
             }
-            String action = mPadKeyActions.get(evt.getKeyCode());
-            int key = action == null ? KeyEvent.KEYCODE_UNKNOWN : keyForAction(action);
             if (evt.getAction() == KeyEvent.ACTION_DOWN && evt.getRepeatCount() == 0) {
                 // The one line that says a real pad reached the engine: which
                 // button arrived, what Enginehost calls it, and the RGSS key it
                 // became. Without it a dead pad and an unbound pad look alike.
-                Log.i(TAG, "Pad key " + KeyEvent.keyCodeToString(evt.getKeyCode())
-                    + " -> action " + (action == null ? "(unbound)" : action)
-                    + " -> RGSS key " + KeyEvent.keyCodeToString(key));
+                StringBuilder became = new StringBuilder();
+                for (PadBinding binding : mPadBindings) {
+                    if (!binding.key || binding.code != evt.getKeyCode()) continue;
+                    int[] directions = directionsForStick(binding.action);
+                    int key = directions != null ? directions[1] : keyForAction(binding.action);
+                    became.append(became.length() == 0 ? "" : ", ").append(binding.action)
+                        .append(" -> RGSS key ").append(KeyEvent.keyCodeToString(key));
+                }
+                Log.i(TAG, "Pad key " + KeyEvent.keyCodeToString(evt.getKeyCode()) + " -> action "
+                    + (became.length() == 0 ? "(unbound)" : became.toString()));
             }
-            if (key == KeyEvent.KEYCODE_UNKNOWN)
-                return true; // a pad button the person has not bound does nothing
+            // A pad button the person has not bound does nothing.
             if (evt.getAction() == KeyEvent.ACTION_DOWN && evt.getRepeatCount() == 0)
-                SDLActivity.onNativeKeyDown(key);
+                applyPadKey(evt.getKeyCode(), true);
             else if (evt.getAction() == KeyEvent.ACTION_UP)
-                SDLActivity.onNativeKeyUp(key);
+                applyPadKey(evt.getKeyCode(), false);
             return true;
         }
         if (
@@ -565,37 +693,32 @@ public class MainActivity extends SDLActivity
         return super.dispatchTouchEvent(evt);
     }
 
+    /**
+     * The pad's sticks, triggers and hat, through the same map as its
+     * buttons. This has to come before the views: SDL's surface takes every
+     * joystick motion for its own game-controller path, and mkxp-z's pad
+     * table would then move RGSS with the left stick and the hat whatever
+     * the person had bound, unbound or remapped.
+     */
+    @Override
+    public boolean dispatchGenericMotionEvent(MotionEvent evt)
+    {
+        if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId())
+                && (evt.getSource() & InputDevice.SOURCE_CLASS_JOYSTICK) != 0) {
+            for (PadBinding binding : mPadBindings) {
+                if (binding.key) continue;
+                float raw = evt.getAxisValue(binding.code);
+                applyAction(binding.action, bindingValue(binding, raw));
+            }
+            applyHat(evt);
+            return true;
+        }
+        return super.dispatchGenericMotionEvent(evt);
+    }
+
     @Override
     public boolean onGenericMotionEvent(MotionEvent evt)
     {
-        // Sticks go through the same map: an axis bound to a direction action
-        // presses that direction's key past the dead zone and releases it at
-        // centre. Hats arrive as D-pad key events and take the key path.
-        if (evt.getDevice() != null && SDLControllerManager.isDeviceSDLJoystick(evt.getDeviceId())) {
-            for (Map.Entry<Integer, String> bound : mPadAxisActions.entrySet()) {
-                float value = evt.getAxisValue(bound.getKey());
-                String action = bound.getValue();
-                int negativeKey, positiveKey;
-                if (action.equals("left_x") || action.equals("right_x")) {
-                    negativeKey = KeyEvent.KEYCODE_DPAD_LEFT; positiveKey = KeyEvent.KEYCODE_DPAD_RIGHT;
-                } else if (action.equals("left_y") || action.equals("right_y")) {
-                    negativeKey = KeyEvent.KEYCODE_DPAD_UP; positiveKey = KeyEvent.KEYCODE_DPAD_DOWN;
-                } else {
-                    continue;
-                }
-                int wanted = value < -0.5f ? negativeKey : value > 0.5f ? positiveKey : KeyEvent.KEYCODE_UNKNOWN;
-                Integer held = mAxisHeldKeys.get(action);
-                if (held != null && held != wanted) {
-                    SDLActivity.onNativeKeyUp(held);
-                    mAxisHeldKeys.remove(action);
-                }
-                if (wanted != KeyEvent.KEYCODE_UNKNOWN && (held == null || held != wanted)) {
-                    SDLActivity.onNativeKeyDown(wanted);
-                    mAxisHeldKeys.put(action, wanted);
-                }
-            }
-            return true;
-        }
         if (mGamepad.processDPadEvent(evt))
             return true;
 
