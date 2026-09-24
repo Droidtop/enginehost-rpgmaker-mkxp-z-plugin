@@ -8,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.loader.ResourcesLoader;
+import android.content.res.loader.ResourcesProvider;
+import android.os.ParcelFileDescriptor;
 import android.hardware.input.InputManager;
 import android.view.InputDevice;
 import android.view.View;
@@ -220,6 +222,8 @@ public class MainActivity extends SDLActivity
         }
     }
 
+    private static final List<AutoCloseable> sBundleResourceHandles = new ArrayList<>();
+
     /**
      * Makes this APK's resource table reachable from the activity's own
      * Resources, where the gamepad layout, its drawables and sdp dimens are
@@ -230,31 +234,46 @@ public class MainActivity extends SDLActivity
      * activity's base Resources by then (performLaunchActivity creates the
      * context before it asks the factory for the activity), so the loader
      * never reaches it and inflating R.layout.gamepad_layout threw
-     * Resources.NotFoundException and took the game down. On API 30+ the
-     * application's loaders are copied across; earlier, the resource APKs
-     * the host names in the intent are added to our AssetManager directly.
+     * Resources.NotFoundException and took the game down. The resource APKs
+     * the host names in the intent are attached here instead: through a
+     * ResourcesLoader of our own on API 30+, addAssetPath before that.
      * Standalone, the table is our own and this finds it at once.
      */
     private void attachBundleResources()
     {
         if (hasBundleResources()) return;
+        ArrayList<String> apks = getIntent().getStringArrayListExtra("dev.enginehost.runtime.RESOURCE_APKS");
+        if (apks == null || apks.isEmpty()) {
+            Log.e(TAG, "The host named no resource APK to attach");
+            return;
+        }
         Resources own = getResources();
-        if (Build.VERSION.SDK_INT >= 30) {
-            List<ResourcesLoader> loaders = getApplicationContext().getResources().getLoaders();
-            if (!loaders.isEmpty()) own.addLoaders(loaders.toArray(new ResourcesLoader[0]));
-        } else {
-            ArrayList<String> apks = getIntent().getStringArrayListExtra("dev.enginehost.runtime.RESOURCE_APKS");
-            if (apks != null) {
-                for (String apk : apks) {
-                    try {
-                        AssetManager assets = own.getAssets();
-                        assets.getClass().getMethod("addAssetPath", String.class).invoke(assets, apk);
-                    } catch (Exception error) {
-                        Log.w(TAG, "Could not add resource APK " + apk + ": " + error);
-                    }
+        for (String apk : apks) {
+            try {
+                if (Build.VERSION.SDK_INT >= 30) {
+                    // The host's own loader is held by the application's
+                    // Resources and not reachable through public API, so
+                    // open the same APK into a loader of our own.
+                    ParcelFileDescriptor descriptor =
+                        ParcelFileDescriptor.open(new File(apk), ParcelFileDescriptor.MODE_READ_ONLY);
+                    ResourcesProvider provider = ResourcesProvider.loadFromApk(descriptor);
+                    ResourcesLoader loader = new ResourcesLoader();
+                    loader.addProvider(provider);
+                    own.addLoaders(loader);
+                    // A collected descriptor closes the file the table is
+                    // still read from; keep both for the life of the process.
+                    sBundleResourceHandles.add(provider);
+                    sBundleResourceHandles.add(descriptor);
+                } else {
+                    AssetManager assets = own.getAssets();
+                    assets.getClass().getMethod("addAssetPath", String.class).invoke(assets, apk);
                 }
-                own.updateConfiguration(own.getConfiguration(), own.getDisplayMetrics());
+            } catch (Exception error) {
+                Log.w(TAG, "Could not attach resource APK " + apk + ": " + error);
             }
+        }
+        if (Build.VERSION.SDK_INT < 30) {
+            own.updateConfiguration(own.getConfiguration(), own.getDisplayMetrics());
         }
         if (hasBundleResources()) {
             Log.i(TAG, "Attached the bundle's resources to the activity");

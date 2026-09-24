@@ -53,9 +53,9 @@ Native libraries are never loaded loose from game storage.
 The bundle's resources (the touch-control layout, its drawables and dimens)
 are compiled at package id `0x80`. Enginehost attaches them from its component
 factory to the application's `Resources`, after Android has already built the
-activity's own; `MainActivity` therefore copies those loaders onto its own
-`Resources` (API 30+) or adds the host-named resource APKs to its
-`AssetManager` (older) before inflating anything. If the table still cannot be
+activity's own; `MainActivity` therefore attaches the resource APKs the host
+names in `dev.enginehost.runtime.RESOURCE_APKS` to its own `Resources` (a
+`ResourcesLoader` on API 30+, `addAssetPath` before) before inflating anything. If the table still cannot be
 found the touch controls are left out and the game runs without them.
 
 Android payloads and signed `.enginehost.tar.xz` archives are produced in CI.
