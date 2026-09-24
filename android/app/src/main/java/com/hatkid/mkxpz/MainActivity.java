@@ -5,6 +5,9 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
+import android.content.res.Resources;
+import android.content.res.loader.ResourcesLoader;
 import android.hardware.input.InputManager;
 import android.view.InputDevice;
 import android.view.View;
@@ -217,9 +220,63 @@ public class MainActivity extends SDLActivity
         }
     }
 
+    /**
+     * Makes this APK's resource table reachable from the activity's own
+     * Resources, where the gamepad layout, its drawables and sdp dimens are
+     * looked up.
+     *
+     * Enginehost attaches the bundle's resources from its component factory,
+     * to the application's Resources. Android has already built this
+     * activity's base Resources by then (performLaunchActivity creates the
+     * context before it asks the factory for the activity), so the loader
+     * never reaches it and inflating R.layout.gamepad_layout threw
+     * Resources.NotFoundException and took the game down. On API 30+ the
+     * application's loaders are copied across; earlier, the resource APKs
+     * the host names in the intent are added to our AssetManager directly.
+     * Standalone, the table is our own and this finds it at once.
+     */
+    private void attachBundleResources()
+    {
+        if (hasBundleResources()) return;
+        Resources own = getResources();
+        if (Build.VERSION.SDK_INT >= 30) {
+            List<ResourcesLoader> loaders = getApplicationContext().getResources().getLoaders();
+            if (!loaders.isEmpty()) own.addLoaders(loaders.toArray(new ResourcesLoader[0]));
+        } else {
+            ArrayList<String> apks = getIntent().getStringArrayListExtra("dev.enginehost.runtime.RESOURCE_APKS");
+            if (apks != null) {
+                for (String apk : apks) {
+                    try {
+                        AssetManager assets = own.getAssets();
+                        assets.getClass().getMethod("addAssetPath", String.class).invoke(assets, apk);
+                    } catch (Exception error) {
+                        Log.w(TAG, "Could not add resource APK " + apk + ": " + error);
+                    }
+                }
+                own.updateConfiguration(own.getConfiguration(), own.getDisplayMetrics());
+            }
+        }
+        if (hasBundleResources()) {
+            Log.i(TAG, "Attached the bundle's resources to the activity");
+        } else {
+            Log.e(TAG, "The bundle's resources are not reachable; the touch controls are left out");
+        }
+    }
+
+    private boolean hasBundleResources()
+    {
+        try {
+            getResources().getResourceTypeName(R.layout.gamepad_layout);
+            return true;
+        } catch (Resources.NotFoundException missing) {
+            return false;
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
+        attachBundleResources();
         String capability = getIntent().getStringExtra("dev.enginehost.runtime.CAPABILITY_ID");
         boolean useRuby19 = capability != null && capability.endsWith("-ruby19");
         String bundleRoot = getIntent().getStringExtra("dev.enginehost.runtime.BUNDLE_ROOT");
@@ -299,7 +356,7 @@ public class MainActivity extends SDLActivity
         mGamepad.setOnKeyDownListener(SDLActivity::onNativeKeyDown);
         mGamepad.setOnKeyUpListener(SDLActivity::onNativeKeyUp);
 
-        if (mLayout != null) {
+        if (mLayout != null && hasBundleResources()) {
             mGamepad.attachTo(this, mLayout);
             attachControlsToggle();
         }

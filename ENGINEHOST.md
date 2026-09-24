@@ -50,6 +50,14 @@ not require a separate installed plugin for each Ruby. The APK inside the
 archive is a resource container, not a separately installed Android package.
 Native libraries are never loaded loose from game storage.
 
+The bundle's resources (the touch-control layout, its drawables and dimens)
+are compiled at package id `0x80`. Enginehost attaches them from its component
+factory to the application's `Resources`, after Android has already built the
+activity's own; `MainActivity` therefore copies those loaders onto its own
+`Resources` (API 30+) or adds the host-named resource APKs to its
+`AssetManager` (older) before inflating anything. If the table still cannot be
+found the touch controls are left out and the game runs without them.
+
 Android payloads and signed `.enginehost.tar.xz` archives are produced in CI.
 Both runtime selections retain mkxp-z's MiniFFI-backed
 Win32API compatibility surface. This is still an incomplete implementation:
