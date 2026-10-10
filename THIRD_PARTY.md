@@ -28,3 +28,20 @@ removed `TRUE` constant in `tool/mkconfig.rb` with the equivalent `true` literal
 and corrects an incompatible direct call to Ruby's not-implemented method stub
 when Bionic does not expose `seekdir`. These are build-portability changes;
 native Ruby behavior is otherwise retained.
+
+## Additional bundled notices (verified 2026-09-10)
+
+| Component | Licence | Source | Where in tree |
+|---|---|---|---|
+| steamshim | zlib-style (Ryan C. Gordon) | https://github.com/icculus/steamshim | `steamshim/LICENSE.txt` |
+| mkxp-z (https-enabled build asset notice) | GPL-3.0 | https://github.com/mkxp-z/mkxp-z | `assets/LICENSE.mkxp-z-with-https.txt` |
+
+The root `COPYING` (GPL-2.0-or-later) matches the licence GitHub reports for
+`mkxp-z/mkxp-z` itself. `assets/LICENSE.mkxp-z-with-https.txt` is a notice
+bundled with this fork's HTTPS-enabled build asset and states GPL-3 instead;
+it is reproduced here unedited as an upstream notice, not written by
+Enginehost. This is a genuine discrepancy in the upstream project's own
+licensing between its general GPL-2.0-or-later notice and this one bundled
+asset's GPL-3 text, not something introduced by this fork; flagged here
+rather than resolved, since resolving it would mean guessing which notice
+governs the actual bundled asset.

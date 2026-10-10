@@ -1,0 +1,326 @@
+diff --git a/binding/binding-mri.cpp b/binding/binding-mri.cpp
+index 3c5484275b619f349008eac3089b3de54a555de3..4a77dc6848a3305d5dfb4842943c1571da9a5a3d 100644
+--- a/binding/binding-mri.cpp
++++ b/binding/binding-mri.cpp
+@@ -1263,6 +1263,24 @@ static void mriBindingExecute() {
+     
+     VALUE lpaths = rb_gv_get(":");
+     rb_ary_clear(lpaths);
++
++    /* The reset above leaves $: with only what the config names. Under
++     * enginehost the bundled Ruby's standard library and native extensions
++     * live inside the bundle, and the host tells Ruby where the way Ruby is
++     * always told: RUBYLIB. Keep those entries, or every `require` of a
++     * stdlib file fails with "no such file to load" even though the file is
++     * right there. */
++    if (const char *rubylib = SDL_getenv("RUBYLIB")) {
++        std::string entries(rubylib);
++        size_t start = 0;
++        while (start <= entries.size()) {
++            size_t end = entries.find(':', start);
++            if (end == std::string::npos) end = entries.size();
++            if (end > start)
++                rb_ary_push(lpaths, rb_str_new(entries.c_str() + start, end - start));
++            start = end + 1;
++        }
++    }
+     
+ #if defined(MKXPZ_BUILD_XCODE) && RAPI_MAJOR >= 2
+     std::string resPath = mkxp_fs::getResourcePath();
+diff --git a/binding/binding-util.h b/binding/binding-util.h
+index 1cb6bc2fe813ea57a423047b9f500a217422de86..c8ae7e1917c96864973b2d0798b2e7bac9959113 100644
+--- a/binding/binding-util.h
++++ b/binding/binding-util.h
+@@ -31,7 +31,11 @@
+ 
+ #include "exception.h"
+ 
+-#ifdef RUBY_API_VERSION_MAJOR
++#ifdef MKXPZ_RUBY_API_VERSION_MAJOR
++#define RAPI_MAJOR MKXPZ_RUBY_API_VERSION_MAJOR
++#define RAPI_MINOR MKXPZ_RUBY_API_VERSION_MINOR
++#define RAPI_TEENY MKXPZ_RUBY_API_VERSION_TEENY
++#elif defined(RUBY_API_VERSION_MAJOR)
+ #define RAPI_MAJOR RUBY_API_VERSION_MAJOR
+ #define RAPI_MINOR RUBY_API_VERSION_MINOR
+ #define RAPI_TEENY RUBY_API_VERSION_TEENY
+@@ -95,7 +99,14 @@ void *drop_gvl_guard(void *(*func)(void *), void *args,
+ #endif
+ 
+ #if RAPI_MAJOR > 1 || RAPI_MINOR <= 9
+-#if RAPI_FULL < 270
++/* Ruby <= 1.9.2 has a FLAT rb_data_type_t: the dmark/dfree/dsize pointers
++ * are direct members, there is no nested `function` group, no `parent`,
++ * and `reserved` holds three entries. The nested layout below arrives in
++ * 1.9.3. Verified against ruby-1.9.2-p320 and ruby-1.9.3-p551 headers. */
++#if RAPI_FULL < 193
++#define DEF_TYPE_CUSTOMNAME_AND_FREE(Klass, Name, Free)                        \
++rb_data_type_t Klass##Type = {Name, 0, Free, 0, {0, 0, 0}, 0}
++#elif RAPI_FULL < 270
+ #define DEF_TYPE_CUSTOMNAME_AND_FREE(Klass, Name, Free)                        \
+ rb_data_type_t Klass##Type = {                                               \
+ Name, {0, Free, 0, {0, 0}}, 0, 0, DEF_TYPE_FLAGS}
+@@ -182,6 +193,9 @@ return Data_Wrap_Struct(klass, 0, free, 0);                                \
+ #if RAPI_FULL < 220
+ #define rb_utf8_str_new_cstr rb_str_new2
+ #define rb_utf8_str_new rb_str_new
++/* The RB_-prefixed spelling arrives with Ruby 2.2's macro cleanup; the
++ * unprefixed INT2FIX exists in every version including modern Ruby. */
++#define RB_INT2FIX(i) INT2FIX(i)
+ #endif
+ 
+ // end
+@@ -286,8 +300,14 @@ static inline void setPrivateData(VALUE self, void *p) {
+         /* RUBY_TYPED_NEVER_FREE == 0, and we don't use
+          * RUBY_TYPED_DEFAULT_FREE for our stuff, so just
+          * checking if it's truthy should be fine */
++        /* Flat before 1.9.3 -- see the DEF_TYPE comment above. */
++#if RAPI_FULL < 193
++        if (RTYPEDDATA_TYPE(self)->dfree)
++            (*RTYPEDDATA_TYPE(self)->dfree)(RTYPEDDATA_DATA(self));
++#else
+         if (RTYPEDDATA_TYPE(self)->function.dfree)
+             (*RTYPEDDATA_TYPE(self)->function.dfree)(RTYPEDDATA_DATA(self));
++#endif
+     }
+     RTYPEDDATA_DATA(self) = p;
+ #else
+diff --git a/binding/http-binding.cpp b/binding/http-binding.cpp
+index 61678021cf374240215d28625f04e2f4035dba4a..4fe649bc899fcb438195a7c8878c6e482d37b401 100644
+--- a/binding/http-binding.cpp
++++ b/binding/http-binding.cpp
+@@ -70,16 +70,19 @@ VALUE formResponse(mkxp_net::HTTPResponse &res) {
+     return ret;
+ }
+ 
+-#if RAPI_MAJOR >= 2
++/* The *Internal workers and their argument structs are plain C++ over
++ * mkxp_net; nothing in them is Ruby-version specific. Only the GVL-dropping
++ * call is, so keep them unconditional and guard the call sites alone.
++ * (Guarding the definitions left the RAPI_MAJOR < 2 branches referring to
++ * symbols that were never declared.) */
+ void* httpGetInternal(void *req) {
+     VALUE ret;
+-    
++
+     mkxp_net::HTTPResponse res = ((mkxp_net::HTTPRequest*)req)->get();
+     ret = formResponse(res);
+-    
++
+     return (void*)ret;
+ }
+-#endif
+ 
+ RB_METHOD_GUARD(httpGet) {
+     RB_UNUSED_PARAM;
+@@ -103,8 +106,6 @@ RB_METHOD_GUARD(httpGet) {
+ }
+ RB_METHOD_GUARD_END
+ 
+-#if RAPI_MAJOR >= 2
+-
+ typedef struct {
+     mkxp_net::HTTPRequest *req;
+     mkxp_net::StringMap *postData;
+@@ -121,7 +122,6 @@ void* httpPostInternal(void *args) {
+     
+     return (void*)ret;
+ }
+-#endif
+ 
+ RB_METHOD_GUARD(httpPost) {
+     RB_UNUSED_PARAM;
+@@ -143,12 +143,11 @@ RB_METHOD_GUARD(httpPost) {
+ #if RAPI_MAJOR >= 2
+     return (VALUE)drop_gvl_guard(httpPostInternal, &args, 0, 0);
+ #else
+-    return httpPostInternal(&args);
++    return (VALUE)httpPostInternal(&args);
+ #endif
+ }
+ RB_METHOD_GUARD_END
+ 
+-#if RAPI_MAJOR >= 2
+ typedef struct {
+     mkxp_net::HTTPRequest *req;
+     const char *body;
+@@ -167,7 +166,6 @@ void* httpPostBodyInternal(void *args) {
+     
+     return (void*)ret;
+ }
+-#endif
+ 
+ RB_METHOD_GUARD(httpPostBody) {
+     RB_UNUSED_PARAM;
+@@ -189,7 +187,7 @@ RB_METHOD_GUARD(httpPostBody) {
+ #if RAPI_MAJOR >= 2
+     return (VALUE)drop_gvl_guard(httpPostBodyInternal, &args, 0, 0);
+ #else
+-    return httpPostBodyInternal(&args);
++    return (VALUE)httpPostBodyInternal(&args);
+ #endif
+ }
+ RB_METHOD_GUARD_END
+diff --git a/scripts/preload/win32_wrap.rb b/scripts/preload/win32_wrap.rb
+index c39e419210c615843087485024b5c0fd15c3dadc..5de3869a676e63c62876f4d3b56e33a7353ce727 100644
+--- a/scripts/preload/win32_wrap.rb
++++ b/scripts/preload/win32_wrap.rb
+@@ -152,7 +152,7 @@ module Scancodes
+ 		:LMENU => :LALT, :RMENU => :RALT,
+ 		
+ 		# These are OEM and can vary by country
+-		# Values taken from Joiplay's src/input.cpp
++		# SDL names for the corresponding Win32 OEM virtual keys.
+ 		:OEM_1 => :SEMICOLON,
+ 		:OEM_PLUS => :EQUALS, :OEM_COMMA => :COMMA, :OEM_MINUS => :MINUS, :OEM_PERIOD => :PERIOD,
+ 		:OEM_2 => :SLASH, :OEM_3 => :GRAVE, :OEM_4 => :LEFTBRACKET, :OEM_5 => :BACKSLASH,
+@@ -353,18 +353,29 @@ class Win32API
+ 	LOG_NATIVE = false unless const_defined?("LOG_NATIVE")
+ 
+ 	alias_method :mkxp_native_initialize, :initialize
++	def impl_defined?(mod, name)
++		mod.const_defined?(name)
++	rescue NameError
++		false
++	end
++
+ 	def initialize(dll, func, *args)
+ 		@dll = dll
+ 		@func = func
+ 		@called = false
+ 
+-		dll = kappatalize(dll.chomp(".dll"))
++		# Games name DLLs as paths ("System/WFExit") and with extensions;
++		# only the bare name can become a constant, and an invalid constant
++		# name must count as "no implementation", not as an exception the
++		# game's own rescue turns into "cannot read modules".
++		# (Enginehost edit, 2026, CC0 like the rest of this file.)
++		dll = kappatalize(File.basename(dll.to_s).chomp(".dll"))
+ 		func = kappatalize(func)
+ 
+ 		if !System.is_windows? or !NATIVE_ON_WINDOWS
+-			if Win32API_Impl.const_defined?(dll)
++			if impl_defined?(Win32API_Impl, dll)
+ 				dll_impl = Win32API_Impl.const_get(dll)
+-				if dll_impl.const_defined?(func)
++				if impl_defined?(dll_impl, func)
+ 					@mkxp_wrap_impl = dll_impl.const_get(func).new
+ 					return
+ 				end
+diff --git a/src/config.cpp b/src/config.cpp
+index 569d40f8ee6a0a8ebe3b48d91f02bb0d658f2f7c..1c262507f583ac9039aea7cdcfa7e9dd2f9135ed 100644
+--- a/src/config.cpp
++++ b/src/config.cpp
+@@ -238,6 +238,20 @@ try { exp } catch (...) {}
+     json::value baseConf = readConfFile(CONF_FILE);
+     copyObject(optsJ, baseConf);
+     copyObject(opts["bindingNames"], baseConf.as_object()["bindingNames"], "bindingNames .");
++
++    // enginehost has already merged the caller and game-folder configuration,
++    // keeping the game-folder values authoritative. Apply its engine-specific
++    // options in memory so launching never rewrites the game or user config.
++    const char *engineHostOptions = SDL_getenv("ENGINEHOST_OPTIONS");
++    if (engineHostOptions && *engineHostOptions) {
++        try {
++            json::value hostConf = json::parse5(engineHostOptions);
++            copyObject(optsJ, hostConf);
++            copyObject(opts["bindingNames"], hostConf.as_object()["bindingNames"], "bindingNames .");
++        } catch (...) {
++            Debug() << "Invalid enginehost RPG Maker options JSON";
++        }
++    }
+     
+ #define SET_OPT_CUSTOMKEY(var, key, type) GUARD(var = opts[#key].as_##type();)
+ #define SET_OPT(var, type) SET_OPT_CUSTOMKEY(var, var, type)
+diff --git a/src/filesystem/filesystem.cpp b/src/filesystem/filesystem.cpp
+index 67c9be0c2b52176313ebfa187554f1a8963620c5..d0441f5375fb9c2599f581cabc1c37754753302e 100644
+--- a/src/filesystem/filesystem.cpp
++++ b/src/filesystem/filesystem.cpp
+@@ -33,6 +33,11 @@
+ 
+ #include <physfs.h>
+ 
++#ifdef __ANDROID__
++#include <SDL_system.h>
++#include <jni.h>
++#endif
++
+ #include <algorithm>
+ #include <stack>
+ #include <stdio.h>
+@@ -295,7 +300,23 @@ static void throwPhysfsError(const char *desc) {
+ }
+ 
+ FileSystem::FileSystem(const char *argv0, bool allowSymlinks) {
+-  if (PHYSFS_init(argv0) == 0)
++#ifdef __ANDROID__
++  /* PhysFS on Android does not want argv0. It casts whatever pointer it is
++   * given to a PHYSFS_AndroidInit and dereferences the JNIEnv inside, and
++   * SDL's argv[0] is the literal string "app_process", so passing it through
++   * faults with the string's bytes as the address. Hand it the struct it
++   * actually reads. Neither reference is kept past PHYSFS_init. */
++  JNIEnv *env = static_cast<JNIEnv *>(SDL_AndroidGetJNIEnv());
++  jobject activity = static_cast<jobject>(SDL_AndroidGetActivity());
++  PHYSFS_AndroidInit ainit = { env, activity };
++  int initialized = PHYSFS_init(reinterpret_cast<const char *>(&ainit));
++  if (activity)
++    env->DeleteLocalRef(activity);
++  (void)argv0;
++#else
++  int initialized = PHYSFS_init(argv0);
++#endif
++  if (initialized == 0)
+     throwPhysfsError("Error initializing PhysFS");
+ 
+   /* One error (=return 0) turns the whole product to 0 */
+diff --git a/src/filesystem/filesystemImpl.cpp b/src/filesystem/filesystemImpl.cpp
+index 1d79dee93f4558737fc83eedd4f577f3ccb37d51..1b0edcfb9082f0f45636fdfef3e9f64d29788c7c 100644
+--- a/src/filesystem/filesystemImpl.cpp
++++ b/src/filesystem/filesystemImpl.cpp
+@@ -99,6 +99,12 @@ std::string filesystemImpl::normalizePath(const char *path, bool preferred, bool
+ 
+ std::string filesystemImpl::getDefaultGameRoot() {
+     char *p = SDL_GetBasePath();
++    // SDL_GetBasePath() legitimately returns NULL on some platforms
++    // (Android among them); constructing std::string from NULL is
++    // undefined and crashed on exactly that. The current directory is
++    // the only sane answer left.
++    if (!p)
++        return std::string(".");
+     std::string ret(p);
+     SDL_free(p);
+     return ret;
+diff --git a/src/main.cpp b/src/main.cpp
+index 6e09d712f946d75549ebbac03a61a89982db2c9f..9247c22072c0b587499d23cf426fb4563557ab54 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -341,6 +341,14 @@ int main(int argc, char *argv[]) {
+       winFlags |= SDL_WINDOW_RESIZABLE;
+     if (conf.fullscreen)
+       winFlags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
++#ifdef __ANDROID__
++    /* On Android the window is the surface; a window asked for at the
++     * game's own resolution keeps that logical size and the frame lands
++     * unscaled in a corner of the screen. Fullscreen makes SDL size the
++     * window to the surface, after which the renderer letterboxes the game
++     * into it (fixedAspectRatio). JoiPlay's mkxp fork does the same. */
++    winFlags |= SDL_WINDOW_FULLSCREEN;
++#endif
+     
+ #ifdef GLES2_HEADER
+   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+@@ -355,6 +363,14 @@ int main(int argc, char *argv[]) {
+ #endif
+ #endif
+     
++#ifdef __ANDROID__
++    /* SDL decides the Android orientation from the window it is asked for:
++     * a resizable window with no hint means "follow the sensor", and a
++     * handheld lying on a desk reports portrait, so RPG Maker's 640x480
++     * frame ended up unscaled in a corner of a portrait surface. Every RGSS
++     * game is a landscape game; say so before the window exists. */
++    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
++#endif
+     win = SDL_CreateWindow(conf.windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED,
+                            SDL_WINDOWPOS_UNDEFINED, conf.defScreenW,
+                            conf.defScreenH, winFlags);
