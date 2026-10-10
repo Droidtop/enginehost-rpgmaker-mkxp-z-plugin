@@ -1,0 +1,8 @@
+{
+  "upstream": {
+    "repo": "mkxp-z/mkxp-z",
+    "ref": "dev (v2.4.2-452-g826929ee)",
+    "commit": "826929eeb3ebc4b887c011604919217a790770f4"
+  },
+  "version": "2.4.2"
+}

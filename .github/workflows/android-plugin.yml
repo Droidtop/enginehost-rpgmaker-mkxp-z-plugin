@@ -2,7 +2,7 @@ name: Build enginehost RPG Maker plugin
 
 on:
   push:
-    branches: [plugin-core, "plugin/**"]
+    branches: ["plugin/**"]
   pull_request:
   workflow_dispatch:
     inputs:
