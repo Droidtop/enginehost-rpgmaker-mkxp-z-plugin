@@ -20,7 +20,7 @@ select the ABI required by a game without installing another plugin:
 repository contains all enginehost build changes needed to reproduce the
 libraries. Ruby is copyright Yukihiro Matsumoto and contributors and is
 available under GPL version 2 or the Ruby license. This plugin is distributed
-under GPL-2.0-or-later; see `COPYING`.
+under GPL-3.0 (`LICENSE`); upstream's GPL-2.0-or-later (`COPYING`, kept) allows it.
 
 Ruby 1.9.2's build scripts predate current host Ruby, Clang, and Android. The
 explicit `android/app/jni/patches/ruby19-modern-baseruby.patch` replaces the
