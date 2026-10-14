@@ -1,0 +1,10 @@
+RPG Maker RGSS (mkxp-z) plugin for Enginehost
+Enginehost wrapper and integration code: Copyright the Enginehost contributors, GNU General Public
+License, version 3 (LICENSE).
+
+Upstream: mkxp-z (https://github.com/mkxp-z/mkxp-z), GPL-2.0-or-later.
+The source headers say "either version 2 of the License, or (at your option) any later version", so GPL-3.0 is allowed.
+The one bundled asset notice that states GPL-3 is satisfied too.
+Upstream's own licence and notice files stay in the tree unchanged: COPYING, assets/LICENSE.mkxp-z-with-https.txt, steamshim/LICENSE.txt, the dependency trees.
+The combined work is distributed under GPL-3.0 (owner rule, 2026-10-14: a codebase that can be
+GPL-3.0 must be). Every upstream copyright and licence notice in the source files stays as it is.

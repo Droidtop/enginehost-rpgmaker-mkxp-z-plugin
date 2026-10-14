@@ -256,6 +256,6 @@
     "revision": "continuous"
   },
   "licenses": [
-    "GPL-2.0-or-later and bundled upstream notices"
+    "GPL-3.0 (the combined bundle; upstream is GPL-2.0-or-later) and bundled upstream notices"
   ]
 }

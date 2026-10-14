@@ -9,3 +9,7 @@ sources, and their included license files are authoritative.
 Ruby 3.1.3 and the official Ruby 1.9.2-p320 source are compiled as separately
 namespaced runtimes. Enginehost selects one capability for a session; it does
 not replace, translate, or redistribute any game scripts or assets.
+
+## Licence of the whole
+
+The combined bundle is distributed under GPL-3.0 (`LICENSE`), which the engine's GPL-2.0-or-later allows. `COPYING` and the dependency licences are kept.
