@@ -62,3 +62,12 @@ Android payloads and signed `.enginehost.tar.xz` archives are produced in CI.
 Both runtime selections retain mkxp-z's MiniFFI-backed
 Win32API compatibility surface. This is still an incomplete implementation:
 MGQ Paradox may expose additional Windows API or RGSS compatibility gaps.
+
+## Links the game opens are offered by Enginehost (2026-10-24)
+
+`SDLActivity.openURL`, where every `SDL_OpenURL` ends, no longer starts an activity itself. It
+hands the link to Enginehost's `dev.enginehost.ActivityLinks.offer` by reflection, since this core
+runs its own Activity and has no `EngineHost`. Enginehost checks the link, names it, and offers
+to open or copy it (Enginehost docs/SPEC.md, "Links a game opens"). mkxp-z's bindings do not call
+`SDL_OpenURL` today and nothing emulates Win32 `ShellExecute`, so an RGSS game's link opened
+nothing before and still opens nothing until such a binding exists. This closes SDL's own route.
