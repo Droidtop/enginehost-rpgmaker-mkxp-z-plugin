@@ -1,7 +1,7 @@
 {
   "bundleId": "dev.enginehost.rpgmaker.rgss.v1",
   "engine": "rpgmaker",
-  "pluginVersion": "1.0.3",
+  "pluginVersion": "1.0.4",
   "apiVersion": 1,
   "entrypoint": "com.hatkid.mkxpz.MainActivity",
   "runtimeTransport": "android-activity",
