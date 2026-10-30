@@ -40,7 +40,8 @@ permissions:
 # could email five failures for one problem. Keyed on the ref, so branches
 # and PRs never cancel each other.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A 32-bit build on request has its own group, so it never cancels the line's own build.
+  group: ${{ github.workflow }}-${{ github.ref }}${{ inputs.include_32_bit && '-32-bit' || '' }}
   cancel-in-progress: true
 
 jobs:
