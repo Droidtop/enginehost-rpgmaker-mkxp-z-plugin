@@ -71,3 +71,13 @@ runs its own Activity and has no `EngineHost`. Enginehost checks the link, names
 to open or copy it (Enginehost docs/SPEC.md, "Links a game opens"). mkxp-z's bindings do not call
 `SDL_OpenURL` today and nothing emulates Win32 `ShellExecute`, so an RGSS game's link opened
 nothing before and still opens nothing until such a binding exists. This closes SDL's own route.
+
+## 32-bit engines only on request, never published (2026-10-30)
+
+Official mkxp-z cores ship arm64-v8a and x86_64 only (Droidtop/tracker#646). For someone who needs a
+32-bit engine, the owner kept a way to build one: dispatch `android-plugin.yml` on the line with
+`include_32_bit` on. CI then cross-compiles the armeabi-v7a support libraries and Ruby runtimes as
+well, and gradle adds the ABI (`-Penginehost32Bit=true`). `verify-apk-native.sh` checks the
+armeabi-v7a libraries instead of refusing them (`ENGINEHOST_32_BIT=1`). The build ends as the unsigned
+bundle inputs artifact and is never signed or published. Enginehost's signing gate refuses 32-bit
+libraries in any case. x86 is not built: no device behind it ever needed it.

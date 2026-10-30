@@ -13,7 +13,10 @@ LOCAL_C_INCLUDES := $(LOCAL_BUILD_PATH)/include/ruby-3.1.0
 
 LOCAL_EXPORT_C_INCLUDES := $(LOCAL_BUILD_PATH)/include/ruby-3.1.0
 
-ifeq ($(TARGET_ARCH_ABI), arm64-v8a)
+ifeq ($(TARGET_ARCH_ABI), armeabi-v7a)
+	LOCAL_C_INCLUDES += $(LOCAL_BUILD_PATH)/include/ruby-3.1.0/armv7a-linux-androideabi-android
+	LOCAL_EXPORT_C_INCLUDES += $(LOCAL_BUILD_PATH)/include/ruby-3.1.0/armv7a-linux-androideabi-android
+else ifeq ($(TARGET_ARCH_ABI), arm64-v8a)
 	LOCAL_C_INCLUDES += $(LOCAL_BUILD_PATH)/include/ruby-3.1.0/aarch64-linux-android-android
 	LOCAL_EXPORT_C_INCLUDES += $(LOCAL_BUILD_PATH)/include/ruby-3.1.0/aarch64-linux-android-android
 else ifeq ($(TARGET_ARCH_ABI), x86_64)

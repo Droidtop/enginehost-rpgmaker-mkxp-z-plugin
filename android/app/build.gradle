@@ -44,8 +44,10 @@ android {
             // An enginehost bundle carries every ABI it supports in one
             // archive and the host picks lib/<abi> from Build.SUPPORTED_ABIS,
             // so x86_64 is not an AVD convenience here: it is half of what
-            // ships. Nothing 32-bit is built (Droidtop/tracker#646).
+            // ships. Nothing 32-bit is built (Droidtop/tracker#646), except for a
+            // 32-bit engine on request (-Penginehost32Bit=true), never published.
             include 'arm64-v8a', 'x86_64'
+            if (project.findProperty('enginehost32Bit') == 'true') include 'armeabi-v7a'
             universalApk true
         }
     }

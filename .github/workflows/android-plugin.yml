@@ -23,6 +23,14 @@ on:
         description: "Release tag (default: derived from the bundle id; testing adds -testing)"
         type: string
         default: ""
+      include_32_bit:
+        description: >-
+          Also build armeabi-v7a, for someone who needs a 32-bit engine. Such a
+          build is never signed or published: it ends as the unsigned bundle
+          inputs artifact (owner, 2026-10-30, Droidtop/tracker#646). Official
+          releases are 64-bit only.
+        type: boolean
+        default: false
 permissions:
   contents: read
 
@@ -56,6 +64,11 @@ jobs:
         working-directory: android/app/jni
         run: |
           export PATH="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          if [ '${{ inputs.include_32_bit }}' = true ]; then
+            make all ARCH=linux-x86_64 ABI=armeabi-v7a HOST=armv7a-linux-androideabi TARGET=arm-linux-androideabi
+            bash ./verify-native-build.sh armeabi-v7a
+            make clean-iconv clean-openssl clean-ruby ARCH=linux-x86_64 ABI=arm64-v8a HOST=aarch64-linux-android TARGET=aarch64-linux-android
+          fi
           make all ARCH=linux-x86_64 ABI=arm64-v8a HOST=aarch64-linux-android TARGET=aarch64-linux-android
           bash ./verify-native-build.sh arm64-v8a
           make clean-iconv clean-openssl clean-ruby ARCH=linux-x86_64 ABI=x86_64 HOST=x86_64-linux-android TARGET=x86_64-linux-android
@@ -66,8 +79,10 @@ jobs:
         run: bash ./generate_xxd.sh
       - name: Build APK
         working-directory: android
+        env:
+          ENGINEHOST_32_BIT: ${{ inputs.include_32_bit && '1' || '' }}
         run: |
-          bash ./gradlew :app:assembleDebug --stacktrace
+          bash ./gradlew :app:assembleDebug --stacktrace ${ENGINEHOST_32_BIT:+-Penginehost32Bit=true}
           echo "APKs produced:"
           ls -l app/build/outputs/apk/debug
           apk="$(find app/build/outputs/apk/debug -name '*universal*.apk' -print -quit)"
@@ -112,10 +127,12 @@ jobs:
           pathlib.Path('build/unsigned/bundle-metadata.json').write_text(json.dumps(data, indent=2) + '\n')
           print('dexFiles =', data['dexFiles'])
           DEXES
+          abis="arm64-v8a x86_64"
+          [ '${{ inputs.include_32_bit }}' != true ] || abis="$abis armeabi-v7a"
           copy_ruby_runtime() {
             runtime=$1
             version=$2
-            for abi in arm64-v8a x86_64; do
+            for abi in $abis; do
               source="android/app/jni/build-$abi/${runtime:+$runtime/}lib/ruby/$version"
               if [ "$runtime" = ruby31 ]; then
                 source="android/app/jni/build-$abi/lib/ruby/$version"
@@ -169,7 +186,8 @@ jobs:
     # shares a runner with the build. Only plugin/* lines make a bundle; on
     # any other ref this and the publish jobs after it are skipped.
     needs: android
-    if: startsWith(github.ref, 'refs/heads/plugin/')
+    # A 32-bit engine built on request is never signed, so nothing after it runs either.
+    if: startsWith(github.ref, 'refs/heads/plugin/') && !inputs.include_32_bit
     permissions:
       contents: read
     uses: Droidtop/enginehost/.github/workflows/sign-engine-bundle.yml@40913f9e6e34c6cc262d6ee18fa83138504a026a

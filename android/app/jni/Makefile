@@ -8,7 +8,10 @@ NPROC     := $(shell nproc)
 # Note: If you building for 64-bit, you should target 21 and higher.
 API ?= 21
 
-# Android CPU specific variables to build; 64-bit only (Droidtop/tracker#646).
+# Android CPU specific variables to build; official builds are 64-bit only
+# (Droidtop/tracker#646). ARMv7-A 32-bit stays buildable for a 32-bit engine on
+# request (HOST armv7a-linux-androideabi, TARGET arm-linux-androideabi,
+# ABI armeabi-v7a); it is never signed or published.
 # (Default: ARMv8-A 64-bit)
 # For ARMv8-A 64-bit:
 # - HOST:   aarch64-linux-android
@@ -52,14 +55,18 @@ RANLIB  := $(TOOLCHAIN)/bin/llvm-ranlib
 STRIP   := $(TOOLCHAIN)/bin/llvm-strip
 
 # OpenSSL configure has own targets for Android building
-ifeq ($(ABI), arm64-v8a)
+ifeq ($(ABI), armeabi-v7a)
+	OPENSSL_TARGET := android-arm
+else ifeq ($(ABI), arm64-v8a)
 	OPENSSL_TARGET := android-arm64
 else ifeq ($(ABI), x86_64)
 	OPENSSL_TARGET := android-x86_64
 endif
 
 # Some flags for ARM arch
-ifeq ($(ABI), arm64-v8a)
+ifeq ($(ABI), armeabi-v7a)
+	CROSSFLAGS := -D__ARM_ARCH_7A__ -D__arm__ -march=armv7-a -mtune=cortex-a7 -mfpu=neon -mfloat-abi=softfp
+else ifeq ($(ABI), arm64-v8a)
 	CROSSFLAGS := -D__ARM_ARCH_8A__ -D__aarch64__ -march=armv8-a -mtune=cortex-a53
 endif
 
