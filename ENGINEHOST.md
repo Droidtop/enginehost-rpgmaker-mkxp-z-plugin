@@ -5,8 +5,8 @@ RPG Maker XP, VX, and VX Ace. RPG Maker 2000/2003 (EasyRPG) and MV/MZ (the
 deployed JavaScript runtime) live in separate upstream-oriented repositories;
 all advertise the same Enginehost family with different contexts.
 
-The upstream-facing `dev` branch tracks mkxp-z without Enginehost packaging.
-`plugin-core` begins at a recorded `dev` revision and contains only the
+`upstream-sync` tracks mkxp-z without Enginehost packaging ("Branches",
+below). `plugin-core` begins at a recorded upstream revision and contains only the
 reusable Android port, Enginehost activity contract, dual-Ruby plumbing,
 bundle metadata, signing workflow, and platform fixes needed by every RGSS
 release. A canonical `plugin/<release-line>` branch begins at its chosen
@@ -81,3 +81,15 @@ well, and gradle adds the ABI (`-Penginehost32Bit=true`). `verify-apk-native.sh`
 armeabi-v7a libraries instead of refusing them (`ENGINEHOST_32_BIT=1`). The build ends as the unsigned
 bundle inputs artifact and is never signed or published. Enginehost's signing gate refuses 32-bit
 libraries in any case. x86 is not built: no device behind it ever needed it.
+
+## Branches
+
+A core has only these branches (Droidtop/tracker#324, the owner, 2026-11-05):
+
+- `upstream-sync` follows upstream mkxp-z (`mkxp-z/mkxp-z`). The daily `sync-upstream` workflow
+  (on `plugin-core`) merges upstream's `dev` into it; nothing of ours is developed there.
+- `plugin-core`, the default branch, is the Enginehost recipe: the wrapper, the build workflows,
+  the bundle metadata, the patch series and the line pins. Recipe changes land here first,
+  through `ci/` branches.
+- `plugin/<line>` is upstream at the commit `enginehost/lines/<line>/line.json` pins, composed
+  with `plugin-core` by the plugin-line tool. Nothing on it is written by hand.
